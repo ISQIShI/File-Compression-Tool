@@ -4,7 +4,6 @@ HINSTANCE MyWnds::hInstance;
 int MyWnds::maxScreenWidth = GetSystemMetrics(SM_CXMAXIMIZED);
 int MyWnds::maxScreenHeight = GetSystemMetrics(SM_CYMAXIMIZED);
 
-
 void MyWnds::ErrorMessageBox(const HWND& hwnd,const TCHAR* msg,bool showErrorCode){
 	//创建字符串用于接收错误代码
 	TCHAR errorCode[20] = _T("");
@@ -19,6 +18,11 @@ void MyWnds::ErrorMessageBox(const HWND& hwnd,const TCHAR* msg,bool showErrorCod
 	delete[]finalMsg;
 	//退出程序
 	exit(GetLastError());
+	
+}
+
+void MyWnds::TestMessageBox(const HWND& hwnd, const TCHAR* text, const TCHAR* title, UINT type){
+	MessageBox(hwnd, text, title, type);
 }
 
 WPARAM MyWnds::MessageLoop(const HWND& hwnd_IsDialogMessage, const HWND& hwnd_GetMessage){
@@ -80,10 +84,16 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return WM_CTLCOLORSTATIC_WndProc();
 	case WM_PAINT://绘制窗口更新区域
 		return WM_PAINT_WndProc();
+	case WM_LBUTTONDOWN://按下鼠标左键
+		return WM_LBUTTONDOWN_WndProc();
+	case WM_LBUTTONUP://松开鼠标左键
+		return WM_LBUTTONUP_WndProc();
 	case WM_WINDOWPOSCHANGING://正在更改窗口大小
 		return WM_WINDOWPOSCHANGING_WndProc();
 	case WM_WINDOWPOSCHANGED://窗口大小完成更改
 		return WM_WINDOWPOSCHANGED_WndProc();
+	case WM_SIZE:
+		return WM_SIZE_WndProc();
 	case WM_CREATE:
 		return WM_CREATE_WndProc();
 	case WM_CLOSE://关闭窗口
@@ -113,27 +123,27 @@ LRESULT MyWnds::WM_PAINT_WndProc(){
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
+LRESULT MyWnds::WM_LBUTTONDOWN_WndProc()
+{
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
+LRESULT MyWnds::WM_LBUTTONUP_WndProc()
+{
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
 LRESULT MyWnds::WM_WINDOWPOSCHANGING_WndProc() {
-	//设定临时指针接收附加信息
-	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
-	if (temp->cx < 960) {
-		temp->cx = 960;
-	}//如果新的窗口宽度小于960（像素），设定为960
-	if (temp->cy < 540) {
-		temp->cy = 540;
-	}//如果新的窗口高度小于540（像素），设定为540
-	return 0;
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
 LRESULT MyWnds::WM_WINDOWPOSCHANGED_WndProc() {
-	//设定临时指针接收附加信息
-	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
-	//创建lParam用于在枚举子窗口时给回调函数传参
-	RECT rect = { wndWidth,wndHeight,temp->cx ,temp->cy };//使用RECT类型变量存储窗口变化前后的宽和高
-	LPARAM lParam = (LPARAM)&rect;//使lParam存储rect地址值，从而之后强转为RECT指针获取数据
-	EnumChildWindows(hwnd_WndProc, EnumChildProc, lParam);
-	wndWidth = temp->cx;//更新窗口宽度
-	wndHeight = temp->cy;//更新窗口高度
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
+LRESULT MyWnds::WM_SIZE_WndProc(){
+	wndWidth = LOWORD(lParam_WndProc);
+	wndHeight = HIWORD(lParam_WndProc);
 	return 0;
 }
 
@@ -142,34 +152,32 @@ LRESULT MyWnds::WM_CREATE_WndProc(){
 }
 
 LRESULT MyWnds::WM_CLOSE_WndProc() {
-	DestroyWindow(hwnd_WndProc);//销毁窗口并发送WM_DESTROY消息
-	return 0;
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
 LRESULT MyWnds::WM_DESTROY_WndProc() {
-	PostQuitMessage(0);//发布WM_QUIT消息
-	return 0;
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
+BOOL MyWnds::StaticEnumChildProc(HWND hwndChild, LPARAM lParam)
+{
+	MyWnds* myWnds = (MyWnds*)lParam;
+	if (myWnds) return myWnds->EnumChildProc(hwndChild, lParam);
+	else return TRUE;
 }
 
 BOOL CALLBACK MyWnds::EnumChildProc(HWND hwndChild, LPARAM lParam)
 {
-	//设定临时指针接收附加信息
-	RECT* temp = (RECT*)lParam;
-	//获取子窗口在屏幕上的坐标
-	RECT rect;
-	GetWindowRect(hwndChild, &rect);
-	//将子窗口坐标转换为相对于父窗口的坐标
-	POINT point = { rect.left,rect.top };
-	ScreenToClient(GetParent(hwndChild), &point);
-	//保持子窗口在父窗口中相对位置
-	MoveWindow(hwndChild, double(point.x * temp->right) / temp->left , double(point.y * temp->bottom) / temp->top , rect.right - rect.left, rect.bottom - rect.top ,TRUE);
 	return TRUE;
 }
+
 
 WPARAM MyWnds::Wnd(bool needMessageLoop){
 	//首先直接创建窗口，防止是因为之前销毁窗口重新创建从而导致重复注册窗口类报错
 	HWND hwnd = CreateWnd();
-	if (hwnd) return 0;//窗口创建成功直接返回
+	if (hwnd) {
+		return 0;//窗口创建成功直接返回
+	}
 	//窗口创建失败且错误代码为1407(窗口类不存在)时注册窗口类再次创建窗口
 	if (GetLastError()==1407) {
 		//注册窗口类
@@ -183,38 +191,3 @@ WPARAM MyWnds::Wnd(bool needMessageLoop){
 	}
 	else ErrorMessageBox(NULL, _T("创建窗口失败"));
 }
-
-//------------------------------------MainWnd----------------------------------------------
-ATOM MainWnd::RegisterWndClass()
-{
-    //实例化窗口类对象---主窗口
-    WNDCLASSEX mainWndClass = { 0 };
-    mainWndClass.cbSize = sizeof(WNDCLASSEX);
-    mainWndClass.style = CS_HREDRAW | CS_VREDRAW;//类样式
-    mainWndClass.lpfnWndProc = StaticWndProc;//窗口过程
-    mainWndClass.hInstance = hInstance;//程序实例
-    mainWndClass.hbrBackground = defBrush;//类背景画刷
-    mainWndClass.lpszClassName = _T("mainWndClassName");//窗口类名
-    mainWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);//窗口图标
-    return RegisterClassEx(&mainWndClass);
-}
-
-
-HWND MainWnd::CreateWnd()
-{
-	//创建窗口---主窗口
-	HWND mainHwnd = CreateWindowEx(
-		WS_EX_CONTROLPARENT, _T("mainWndClassName"), _T("鸭一压"), WS_TILEDWINDOW,
-		int(0.15 * wndWidth), int(0.15 * wndHeight), wndWidth, wndHeight,
-		NULL, NULL, hInstance, this
-	);
-	//显示窗口
-	if(mainHwnd) ShowWindow(mainHwnd, SW_SHOW);
-	return mainHwnd;
-}
-
-LRESULT MainWnd::WM_CREATE_WndProc()
-{
-	return LRESULT();
-}
-

@@ -17,12 +17,12 @@ protected:
 	static int maxScreenWidth;
 	//屏幕最大高度
 	static int maxScreenHeight;
-	//默认画刷
-	HBRUSH defBrush = CreateSolidBrush(RGB(66, 149, 224));
+	//默认对象资源
+	HGDIOBJ  defObject = NULL;
 	//窗口宽度
-	int wndWidth = 0.53 * maxScreenWidth;
+	UINT wndWidth = 0.53 * maxScreenWidth;
 	//窗口高度
-	int wndHeight = 0.62 * maxScreenHeight;
+	UINT wndHeight = 0.62 * maxScreenHeight;
 
 	//从窗口过程获取的参数
 	HWND hwnd_WndProc;
@@ -31,11 +31,12 @@ protected:
 	LPARAM lParam_WndProc;
 
 	~MyWnds(){
-		DeleteObject(defBrush);//销毁临时画刷
+		if (defObject != NULL) DeleteObject(defObject);//销毁默认对象
 	}
 	//错误信息弹窗
 	void ErrorMessageBox(const HWND& hwnd = NULL, const TCHAR* msg = _T(""), bool showErrorCode = true);
-
+	//测试信息弹窗
+	void TestMessageBox(const HWND& hwnd = NULL, const TCHAR* text = _T("测试"), const TCHAR* title = _T("测试"),UINT type = MB_OK);
 	//注册窗口类
 	virtual ATOM RegisterWndClass() = 0;
 	//创建窗口
@@ -54,10 +55,16 @@ protected:
 	virtual LRESULT WM_CTLCOLORSTATIC_WndProc();
 	//绘制窗口更新区域
 	virtual LRESULT WM_PAINT_WndProc();
-	//处理窗口大小/位置发生改变后收到的消息，在这里限制了窗口的最小尺寸
+	//按下鼠标左键
+	virtual LRESULT WM_LBUTTONDOWN_WndProc();
+	//松开鼠标左键
+	virtual LRESULT	WM_LBUTTONUP_WndProc();
+	//处理窗口大小/位置发生改变后收到的消息
 	virtual LRESULT WM_WINDOWPOSCHANGING_WndProc();
-	//处理设定好窗口大小/位置后的反馈信息，在这里用于同步调整属于该窗口的所有子窗口/控件的位置或大小，实现自适应变化
+	//处理设定好窗口大小/位置后的反馈信息
 	virtual LRESULT WM_WINDOWPOSCHANGED_WndProc();
+	//获取窗口新的宽度和高度
+	virtual LRESULT WM_SIZE_WndProc();
 	//创建窗口时发送的消息
 	virtual LRESULT WM_CREATE_WndProc();
 	//点击关闭按钮
@@ -67,37 +74,16 @@ protected:
 	//----------------------------------------------------------
 	
 	//枚举子窗口时调用的回调函数
-	static BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
+	static BOOL CALLBACK StaticEnumChildProc(HWND hwndChild, LPARAM lParam);
+	virtual BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
 
 public:
 	//获取应用程序的当前实例的句柄
-	static HINSTANCE GethInstance() { return hInstance; }
+	static HINSTANCE GethInstance(){ return hInstance; }
 	//设定应用程序的当前实例的句柄
 	static void SethInstance(HINSTANCE hIn) { hInstance = hIn; }
+	//获取窗口的句柄
+	HWND GetWndHwnd() const { return hwnd_WndProc; }
 	//创建窗口
 	virtual WPARAM Wnd(bool needMessageLoop = false);
-};
-
-
-//主窗口类
-class MainWnd :public MyWnds {
-	//采用单例设计理念，主窗口类只能实例化一个对象
-	MainWnd(){} //禁止外部构造
-	~MainWnd() {} //禁止外部析构
-	MainWnd(const MainWnd& mainWnd) = delete;//禁止外部拷贝构造
-	const MainWnd& operator=(const MainWnd& mainWnd) = delete;//禁止外部赋值操作
-
-	//----------------------子类重写的函数--------------------------------
-	//注册窗口类
-	ATOM RegisterWndClass();
-	//创建窗口
-	HWND CreateWnd();
-
-	LRESULT WM_CREATE_WndProc();
-
-public:
-	static MainWnd& GetMainWnd() { 
-		static MainWnd mainWnd;
-		return mainWnd; 
-	}
 };

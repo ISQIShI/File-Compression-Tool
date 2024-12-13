@@ -136,10 +136,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FCT.cpp" />
+    <ClCompile Include="HuffmanTree.cpp" />
+    <ClCompile Include="MainWnd.cpp" />
     <ClCompile Include="MyWnds.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="General.h" />
+    <ClInclude Include="HuffmanTree.h" />
+    <ClInclude Include="MainWnd.h" />
     <ClInclude Include="MyWnds.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

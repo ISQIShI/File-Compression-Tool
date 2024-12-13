@@ -1,5 +1,4 @@
-#include"MyWnds.h"
-
+#include"MainWnd.h"
 
 //程序入口函数
 int WINAPI _tWinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE hPreInstance, _In_ LPTSTR lpCmdLine, _In_ INT nShowCmd) {
