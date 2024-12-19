@@ -18,7 +18,7 @@ enum MainWndChildID :unsigned char {
 	fileListID,
 };
 
-enum FileListColumnID :unsigned char {
+enum class FileListColumnID :unsigned char {
 	columnNameID,
 	columnTypeID
 };
@@ -26,28 +26,34 @@ enum FileListColumnID :unsigned char {
 //主窗口类
 class MainWnd :public MyWnds {
 	//采用单例设计理念，主窗口类只能实例化一个对象
-	MainWnd(){} //禁止外部构造
-	~MainWnd(){} //禁止外部析构
+	MainWnd(){
+		wndWidth = 0.53 * maxScreenWidth;
+		wndHeight = 0.62 * maxScreenHeight;
+	} //禁止外部构造
+	~MainWnd()= default; //禁止外部析构
 	MainWnd(const MainWnd& mainWnd) = delete;//禁止外部拷贝构造
 	const MainWnd& operator=(const MainWnd& mainWnd) = delete;//禁止外部赋值操作
 
 	//----------------------子类重写的函数--------------------------------
 	//注册窗口类
-	ATOM RegisterWndClass();
+	ATOM RegisterWndClass() override;
 	//创建窗口
-	HWND CreateWnd();
+	HWND CreateWnd() override;
 
-	LRESULT WM_COMMAND_WndProc();
-	LRESULT WM_NOTIFY_WndProc();
+	LRESULT WM_COMMAND_WndProc() override;
+	LRESULT WM_NOTIFY_WndProc() override;
 	//处理窗口大小/位置发生改变后收到的消息，在这里限制了窗口的最小尺寸
-	LRESULT WM_WINDOWPOSCHANGING_WndProc();
+	LRESULT WM_WINDOWPOSCHANGING_WndProc() override;
 	//处理设定好窗口大小/位置后的反馈信息，在这里用于同步调整属于该窗口的所有子窗口/控件的位置或大小，实现自适应变化
-	LRESULT WM_WINDOWPOSCHANGED_WndProc();
-	LRESULT WM_CREATE_WndProc();
-	LRESULT WM_CLOSE_WndProc();
-	LRESULT WM_DESTROY_WndProc();
+	LRESULT WM_WINDOWPOSCHANGED_WndProc() override;
+	//创建窗口时顺带执行的操作
+	LRESULT WM_CREATE_WndProc() override;
+	//关闭窗口
+	LRESULT WM_CLOSE_WndProc() override;
+	//销毁窗口
+	LRESULT WM_DESTROY_WndProc() override;
 	//重写的枚举子窗口过程函数
-	BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
+	BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam) override;
 
 public:
 	static MainWnd& GetMainWnd() {

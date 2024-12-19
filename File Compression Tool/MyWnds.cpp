@@ -25,19 +25,27 @@ void MyWnds::TestMessageBox(const HWND& hwnd, const TCHAR* text, const TCHAR* ti
 	MessageBox(hwnd, text, title, type);
 }
 
-WPARAM MyWnds::MessageLoop(const HWND& hwnd_IsDialogMessage, const HWND& hwnd_GetMessage){
+WPARAM MyWnds::MessageLoop(const HWND& hwnd_IsDialogMessage){
+	//禁用父窗口
+	if(isModalDialog)EnableWindow(isModalDialog, FALSE);
 	MSG Msg = { 0 };
 	BOOL bRet = 1;
-	while ((bRet = GetMessage(&Msg, hwnd_GetMessage, 0, 0)) != 0) {
+	while ((bRet = GetMessage(&Msg, NULL, 0, 0)) != 0) {
 		if (bRet == -1) ErrorMessageBox(NULL, _T("消息检索失败"));
 		else
 		{
 			if (!IsDialogMessage(hwnd_IsDialogMessage, &Msg)) //该函数处理键盘消息(如TAB切换控件焦点)
 			{
+				//转换并分发消息
 				TranslateMessage(&Msg);
 				DispatchMessage(&Msg);
 			}
 		}
+	}
+	//启用并恢复聚焦到父窗口
+	if (isModalDialog) {
+		EnableWindow(isModalDialog, TRUE);
+		SetFocus(isModalDialog);
 	}
 	return Msg.wParam;
 }
@@ -99,12 +107,17 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	case WM_CLOSE://关闭窗口
 		return WM_CLOSE_WndProc();
 	case WM_DESTROY://销毁窗口
+	{
+		if (tempObject != NULL) DeleteObject(tempObject);//销毁临时对象
+		if (defFont != NULL) DeleteObject(defFont);//销毁默认字体
 		return WM_DESTROY_WndProc();
+	}
 	default://未自定义的其他消息
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);//调用默认窗口过程函数
 	}
 }
 
+//处理窗口消息的函数
 LRESULT MyWnds::WM_COMMAND_WndProc()
 {
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
@@ -118,7 +131,6 @@ LRESULT MyWnds::WM_CTLCOLORSTATIC_WndProc(){
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
-//处理窗口消息的函数
 LRESULT MyWnds::WM_PAINT_WndProc(){
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
@@ -138,13 +150,15 @@ LRESULT MyWnds::WM_WINDOWPOSCHANGING_WndProc() {
 }
 
 LRESULT MyWnds::WM_WINDOWPOSCHANGED_WndProc() {
+	//设定临时指针接收附加信息
+	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
+	wndWidth = temp->cx;//更新窗口宽度
+	wndHeight = temp->cy;//更新窗口高度
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
 LRESULT MyWnds::WM_SIZE_WndProc(){
-	wndWidth = LOWORD(lParam_WndProc);
-	wndHeight = HIWORD(lParam_WndProc);
-	return 0;
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
 LRESULT MyWnds::WM_CREATE_WndProc(){
@@ -175,19 +189,18 @@ BOOL CALLBACK MyWnds::EnumChildProc(HWND hwndChild, LPARAM lParam)
 WPARAM MyWnds::Wnd(bool needMessageLoop){
 	//首先直接创建窗口，防止是因为之前销毁窗口重新创建从而导致重复注册窗口类报错
 	HWND hwnd = CreateWnd();
-	if (hwnd) {
-		return 0;//窗口创建成功直接返回
+	if (!hwnd) {
+		//窗口创建失败且错误代码为1407(窗口类不存在)时注册窗口类再次创建窗口
+		if (GetLastError() == 1407) {
+			//注册窗口类
+			if (!RegisterWndClass()) ErrorMessageBox(NULL, _T("注册窗口类失败"));
+			//创建窗口
+			hwnd = CreateWnd();
+			if (!hwnd)ErrorMessageBox(NULL, _T("创建窗口失败"));
+		}
+		else ErrorMessageBox(NULL, _T("创建窗口失败"));
 	}
-	//窗口创建失败且错误代码为1407(窗口类不存在)时注册窗口类再次创建窗口
-	if (GetLastError()==1407) {
-		//注册窗口类
-		if (!RegisterWndClass()) ErrorMessageBox(NULL, _T("注册窗口类失败"));
-		//创建窗口
-		hwnd = CreateWnd();
-		if (!hwnd)ErrorMessageBox(NULL, _T("创建窗口失败"));
-		//构建消息循环
-		if (needMessageLoop)return MessageLoop(hwnd);
-		else return 0;
-	}
-	else ErrorMessageBox(NULL, _T("创建窗口失败"));
+	//构建消息循环
+	if (needMessageLoop)return MessageLoop(hwnd);
+	else return 0;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include<Windows.h>
+#include<CommCtrl.h>
 #include<tchar.h>
 
 //编译器使用Win XP的新式控件风格
@@ -17,22 +18,22 @@ protected:
 	static int maxScreenWidth;
 	//屏幕最大高度
 	static int maxScreenHeight;
-	//默认对象资源
-	HGDIOBJ  defObject = NULL;
+	//临时对象资源
+	HGDIOBJ  tempObject = NULL;
+	//默认字体
+	HFONT defFont = NULL;
 	//窗口宽度
-	UINT wndWidth = 0.53 * maxScreenWidth;
+	UINT wndWidth = NULL;
 	//窗口高度
-	UINT wndHeight = 0.62 * maxScreenHeight;
-
+	UINT wndHeight = NULL;
+	//模态对话框参数
+	HWND isModalDialog = NULL;
 	//从窗口过程获取的参数
-	HWND hwnd_WndProc;
-	UINT uMsg_WndProc;
-	WPARAM wParam_WndProc;
-	LPARAM lParam_WndProc;
-
-	~MyWnds(){
-		if (defObject != NULL) DeleteObject(defObject);//销毁默认对象
-	}
+	HWND hwnd_WndProc = NULL;
+	UINT uMsg_WndProc = NULL;
+	WPARAM wParam_WndProc = NULL;
+	LPARAM lParam_WndProc = NULL;
+	
 	//错误信息弹窗
 	void ErrorMessageBox(const HWND& hwnd = NULL, const TCHAR* msg = _T(""), bool showErrorCode = true);
 	//测试信息弹窗
@@ -42,7 +43,7 @@ protected:
 	//创建窗口
 	virtual HWND CreateWnd() = 0;
 	//构建消息循环
-	virtual WPARAM MessageLoop(const HWND& hwnd_IsDialogMessage, const HWND& hwnd_GetMessage =NULL);
+	virtual WPARAM MessageLoop(const HWND& hwnd_IsDialogMessage);
 
 	//静态窗口过程
 	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -84,6 +85,8 @@ public:
 	static void SethInstance(HINSTANCE hIn) { hInstance = hIn; }
 	//获取窗口的句柄
 	HWND GetWndHwnd() const { return hwnd_WndProc; }
+	UINT GetWndWidth()const { return wndWidth; }
+	UINT GetWndHeight()const { return wndHeight; }
 	//创建窗口
 	virtual WPARAM Wnd(bool needMessageLoop = false);
 };
