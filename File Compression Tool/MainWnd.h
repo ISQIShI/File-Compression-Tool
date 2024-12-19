@@ -29,6 +29,8 @@ class MainWnd :public MyWnds {
 	MainWnd(){
 		wndWidth = 0.53 * maxScreenWidth;
 		wndHeight = 0.62 * maxScreenHeight;
+		if (wndWidth < 960) wndWidth = 960;
+		if (wndHeight < 540)wndHeight = 540;
 	} //禁止外部构造
 	~MainWnd()= default; //禁止外部析构
 	MainWnd(const MainWnd& mainWnd) = delete;//禁止外部拷贝构造

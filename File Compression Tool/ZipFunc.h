@@ -7,6 +7,7 @@ using namespace std::filesystem;
 
 enum class ZipFuncWndChildID :unsigned char {
 	buttonSelectFileID,
+	buttonSelectFolderID,
 	selectedFileListID,
 	buttonStartID,
 	buttonCancelID

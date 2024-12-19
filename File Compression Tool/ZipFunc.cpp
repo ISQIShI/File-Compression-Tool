@@ -214,28 +214,34 @@ LRESULT ZipFunc::WM_CREATE_WndProc()
 		DEFAULT_PITCH | FF_SWISS, _T("楷体")); // 创建一个 楷体 字体，23px 大小
 	//创建按钮
 	CreateWindowEx(
-		0, WC_BUTTON, _T("选择文件"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
-		175, 510, 130, 50,
+		0, WC_BUTTON, _T("添加文件"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		20, 380, 130, 50,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonSelectFileID), MyWnds::hInstance, this
 	);
 	CreateWindowEx(
+		0, WC_BUTTON, _T("添加文件夹"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		175, 380, 130, 50,
+		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonSelectFolderID), MyWnds::hInstance, this
+	);
+	CreateWindowEx(
 		0, WC_BUTTON, _T("开始压缩"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
-		435,510 ,130 ,50 ,
+		435,380 ,130 ,50 ,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonStartID), MyWnds::hInstance, this
 	);
 	CreateWindowEx(
 		0, WC_BUTTON, _T("取消"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
-		695, 510, 130, 50,
+		695, 380, 130, 50,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonCancelID), MyWnds::hInstance, this
 	);
 	//设置字体
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonSelectFileID), WM_SETFONT, (WPARAM)defFont, TRUE);
+	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonSelectFolderID), WM_SETFONT, (WPARAM)defFont, TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonStartID), WM_SETFONT, (WPARAM)defFont, TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonCancelID), WM_SETFONT, (WPARAM)defFont, TRUE);
 	//创建已选择文件列表
 	HWND selectedFileListHwnd = CreateWindowEx(
 		0, WC_LISTVIEW, _T("已选择的文件"), WS_CHILD | WS_VISIBLE |WS_BORDER | LVS_REPORT | LVS_SHOWSELALWAYS,
-		50, 20, 900, 450,
+		50, 20, 900, 350,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::selectedFileListID), MyWnds::hInstance, this
 	);
 	if (!selectedFileListHwnd)ErrorMessageBox(hwnd_WndProc, _T("创建文件列表框selectedFileList失败"));
