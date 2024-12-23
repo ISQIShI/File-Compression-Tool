@@ -18,7 +18,6 @@ void MyWnds::ErrorMessageBox(const HWND& hwnd,const TCHAR* msg,bool showErrorCod
 	delete[]finalMsg;
 	//退出程序
 	exit(GetLastError());
-	
 }
 
 void MyWnds::TestMessageBox(const HWND& hwnd, const TCHAR* text, const TCHAR* title, UINT type){
@@ -108,8 +107,21 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return WM_CLOSE_WndProc();
 	case WM_DESTROY://销毁窗口
 	{
-		if (tempObject != NULL) DeleteObject(tempObject);//销毁临时对象
-		if (defFont != NULL) DeleteObject(defFont);//销毁默认字体
+		//销毁临时对象
+		for (HGDIOBJ & x : tempObject) { 
+			if (x != NULL){
+				DeleteObject(x);
+				x = NULL;
+			}
+		}
+		//销毁长期对象
+		for (HGDIOBJ & x : lTSObject)
+		{
+			if (x != NULL) {
+				DeleteObject(x);
+				x = NULL;
+			}
+		}
 		return WM_DESTROY_WndProc();
 	}
 	default://未自定义的其他消息

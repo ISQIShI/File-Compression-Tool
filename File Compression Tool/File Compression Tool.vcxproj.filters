@@ -24,10 +24,16 @@
     <ClCompile Include="MainWnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="HuffmanTree.cpp">
+    <ClCompile Include="HuffmanCode.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ZipFunc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WinFileProc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,10 +44,16 @@
     <ClInclude Include="MainWnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="HuffmanTree.h">
+    <ClInclude Include="HuffmanCode.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ZipFunc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WinFileProc.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

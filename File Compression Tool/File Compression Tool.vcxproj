@@ -136,13 +136,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FCT.cpp" />
-    <ClCompile Include="HuffmanTree.cpp" />
+    <ClCompile Include="WinFileProc.cpp" />
+    <ClCompile Include="HuffmanCode.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MainWnd.cpp" />
     <ClCompile Include="MyWnds.cpp" />
     <ClCompile Include="ZipFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HuffmanTree.h" />
+    <ClInclude Include="WinFileProc.h" />
+    <ClInclude Include="HuffmanCode.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="MainWnd.h" />
     <ClInclude Include="MyWnds.h" />
     <ClInclude Include="ZipFunc.h" />

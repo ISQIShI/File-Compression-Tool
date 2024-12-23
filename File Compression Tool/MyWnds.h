@@ -7,7 +7,7 @@
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 //压缩包后缀名
-#define SUFFIX .ya
+#define SUFFIX ".ya"
 
 //抽象类MyWnds作为其他窗口类的统一父类
 class MyWnds {
@@ -19,9 +19,9 @@ protected:
 	//屏幕最大高度
 	static int maxScreenHeight;
 	//临时对象资源
-	HGDIOBJ  tempObject = NULL;
-	//默认字体
-	HFONT defFont = NULL;
+	HGDIOBJ tempObject[10] = {};
+	//长期对象资源
+	HGDIOBJ lTSObject[10] = {};
 	//窗口宽度
 	UINT wndWidth = NULL;
 	//窗口高度

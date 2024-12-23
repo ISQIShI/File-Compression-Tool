@@ -93,12 +93,12 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 			case CDDS_PREPAINT: //在绘制周期开始之前
 			{
 				//创建画刷
-				tempObject = CreateSolidBrush(RGB(45, 138, 221));
+				tempObject[0] = CreateSolidBrush(RGB(45, 138, 221));
 				//自定义工具栏背景
-				FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, (HBRUSH)tempObject);
+				FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, (HBRUSH)tempObject[0]);
 				//销毁画刷释放资源
-				DeleteObject(tempObject);
-				tempObject = NULL;
+				DeleteObject(tempObject[0]);
+				tempObject[0] = NULL;
 				//通知工具栏的所有子项进行自定义绘制
 				return CDRF_NOTIFYITEMDRAW;
 			}
@@ -113,28 +113,28 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 				//设置点击按钮时的背景色
 				if (SendMessage(lpnmhdr->hwndFrom, TB_ISBUTTONPRESSED, lpnmtbcd->nmcd.dwItemSpec, 0) && (lpnmtbcd->nmcd.uItemState & CDIS_HOT)) {
 					//创建画刷
-					tempObject = CreateSolidBrush(RGB(12, 74, 129));
+					tempObject[0] = CreateSolidBrush(RGB(12, 74, 129));
 					//填充按钮颜色
-					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject);
+					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
 					//销毁画刷释放资源
-					DeleteObject(tempObject);
-					tempObject = NULL;
+					DeleteObject(tempObject[0]);
+					tempObject[0] = NULL;
 				}
 				else if ((lpnmtbcd->nmcd.uItemState & CDIS_HOT) || (lpnmtbcd->nmcd.uItemState & CDIS_MARKED)) //检查热追踪状态
 				{
 					//创建画刷
-					tempObject = CreateSolidBrush(RGB(17, 99, 172));
+					tempObject[0] = CreateSolidBrush(RGB(17, 99, 172));
 					//设置热追踪背景色
-					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject);
+					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
 					//销毁画刷释放资源
-					DeleteObject(tempObject);
-					tempObject = NULL;
+					DeleteObject(tempObject[0]);
+					tempObject[0] = NULL;
 					//如果被标记则取消标记状态
 					//if (lpnmtbcd->nmcd.uItemState & CDIS_MARKED)SendMessage(lpnmhdr->hwndFrom, TB_MARKBUTTON, lpnmtbcd->nmcd.dwItemSpec, FALSE);
 				}
 				else {
 					//设置默认背景色
-					//FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, tempObject);
+					//FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, tempObject[0]);
 				}
 				//获取当前将要绘制的按钮的样式信息
 				TBBUTTONINFO tbbInfo;
@@ -148,12 +148,12 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 					tempRC.left = lpnmtbcd->nmcd.rc.right - 17;
 					tempRC.right = tempRC.left + 1;
 					//创建画刷
-					tempObject = CreateSolidBrush(RGB(45, 138, 221));
+					tempObject[0] = CreateSolidBrush(RGB(45, 138, 221));
 					//绘制与工具栏背景相同颜色的竖线
-					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject);
+					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
 					//销毁画刷释放资源
-					DeleteObject(tempObject);
-					tempObject = NULL;
+					DeleteObject(tempObject[0]);
+					tempObject[0] = NULL;
 					//下拉箭头所在的区域
 					tempRC = { lpnmtbcd->nmcd.rc.right - 16, lpnmtbcd->nmcd.rc.top, lpnmtbcd->nmcd.rc.right, lpnmtbcd->nmcd.rc.bottom };
 					//箭头所处的中心点
@@ -166,13 +166,13 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 						{centerX + 5, centerY - 3 }//右上角
 					};
 					//创建白色画笔
-					tempObject = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-					SelectObject(lpnmtbcd->nmcd.hdc, tempObject);
+					tempObject[0] = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+					SelectObject(lpnmtbcd->nmcd.hdc, tempObject[0]);
 					//绘制箭头(折线)
 					Polyline(lpnmtbcd->nmcd.hdc, points, 3);
 					//销毁画笔释放资源
-					DeleteObject(tempObject);
-					tempObject = NULL;
+					DeleteObject(tempObject[0]);
+					tempObject[0] = NULL;
 				}
 
 				//创建字体
@@ -181,8 +181,8 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 					DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
 					DEFAULT_PITCH | FF_SWISS, _T("楷体")); // 创建一个 楷体 字体，35px 大小
 				// 设置字体和文字颜色
-				defFont = newFont;
-				HFONT oldFont = (HFONT)SelectObject(lpnmtbcd->nmcd.hdc, defFont);//选择设置自定义字体
+				lTSObject[0] = newFont;
+				HFONT oldFont = (HFONT)SelectObject(lpnmtbcd->nmcd.hdc, lTSObject[0]);//选择设置自定义字体
 				SetTextColor(lpnmtbcd->nmcd.hdc, RGB(255, 255, 255));//文字颜色
 				SetBkMode(lpnmtbcd->nmcd.hdc, TRANSPARENT);//背景透明
 
