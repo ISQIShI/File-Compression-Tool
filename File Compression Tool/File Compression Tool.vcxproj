@@ -136,7 +136,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FCT.cpp" />
-    <ClCompile Include="WinFileProc.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
+    <ClCompile Include="FileService.cpp" />
     <ClCompile Include="HuffmanCode.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MainWnd.cpp" />
@@ -144,12 +145,16 @@
     <ClCompile Include="ZipFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WinFileProc.h" />
+    <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="FileService.h" />
     <ClInclude Include="HuffmanCode.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MainWnd.h" />
     <ClInclude Include="MyWnds.h" />
     <ClInclude Include="ZipFunc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ToDo.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

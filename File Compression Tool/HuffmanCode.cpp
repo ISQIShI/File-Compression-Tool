@@ -1,4 +1,4 @@
-#include "WinFileProc.h"
+#include "FileService.h"
 #include"HuffmanCode.h"
 
 
@@ -6,7 +6,7 @@ void HuffmanCode::GetSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequenc
 {
 	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)fileName.c_str(), fileOffset, fileMapSize);
 	//进行文件映射
-	WinFileProc::MapFileReader(*mapFileInfo);
+	FileService::MapFileReader(*mapFileInfo);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
 	//文件指针逐字节遍历整个映射的区域

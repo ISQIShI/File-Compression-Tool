@@ -1,6 +1,6 @@
-#include"WinFileProc.h"
+#include"FileService.h"
 
-void WinFileProc::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode)
+void FileService::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode)
 {
 	//创建字符串用于接收错误代码
 	TCHAR errorCode[20] = _T("");
@@ -17,7 +17,7 @@ void WinFileProc::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showE
 	exit(GetLastError());
 }
 
-void WinFileProc::MapFileReader(MapFileInfo& mapFileInfo)
+void FileService::MapFileReader(MapFileInfo& mapFileInfo)
 {
 	//使用内存映射方式读取文件，提高文件读取速度
 	//打开文件以获取句柄
@@ -41,7 +41,7 @@ void WinFileProc::MapFileReader(MapFileInfo& mapFileInfo)
 	}
 }
 
-uintmax_t WinFileProc::GetFileSize(const path& fileName)
+uintmax_t FileService::GetFileSize(const path& fileName)
 {
 	if (!exists(fileName))ErrorMessageBox(NULL, _T("文件(夹)不存在,无法获取大小"));
 	//获取普通文件大小
@@ -58,18 +58,18 @@ uintmax_t WinFileProc::GetFileSize(const path& fileName)
 	return size;
 }
 
-void WinFileProc::ZipFile(const path& sourceFile, const path& destFile, const unordered_map<BYTE, string>& symbolCode, size_t fileOffset, size_t fileMapSize)
+void FileService::ZipFile(const path& sourceFile, const path& destFile, const unordered_map<BYTE, string>& symbolCode, size_t fileOffset, size_t fileMapSize)
 {
 	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)sourceFile.c_str(), fileOffset, fileMapSize);
 	//进行文件映射
-	WinFileProc::MapFileReader(*mapFileInfo);
+	FileService::MapFileReader(*mapFileInfo);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
 	//打开压缩包文件
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
 		delete mapFileInfo;
-		WinFileProc::ErrorMessageBox(NULL, _T("无法打开文件"));
+		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
 	}
 	//设置文件指针
 	LARGE_INTEGER tempL_I;
@@ -129,12 +129,12 @@ void WinFileProc::ZipFile(const path& sourceFile, const path& destFile, const un
 	delete mapFileInfo;
 }
 
-void WinFileProc::WriteZipFileHeader(const path& destFile, const vector<pair<BYTE, BYTE>>& codeLength)
+void FileService::WriteZipFileHeader(const path& destFile, const vector<pair<BYTE, BYTE>>& codeLength)
 {
 	//打开压缩包文件
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		WinFileProc::ErrorMessageBox(NULL, _T("无法打开文件"));
+		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
 	}
 	//设置文件指针
 	LARGE_INTEGER tempL_I;
@@ -156,12 +156,12 @@ void WinFileProc::WriteZipFileHeader(const path& destFile, const vector<pair<BYT
 	CloseHandle(fileHandle);
 }
 
-void WinFileProc::WriteFileHeader(const path& destFile, const path& sourceFile, const pair<uintmax_t, BYTE>& WPL_Size)
+void FileService::WriteFileHeader(const path& destFile, const path& sourceFile, const pair<uintmax_t, BYTE>& WPL_Size)
 {
 	//打开压缩包文件
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		WinFileProc::ErrorMessageBox(NULL, _T("无法打开文件"));
+		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
 	}
 	//设置文件指针
 	LARGE_INTEGER tempL_I;

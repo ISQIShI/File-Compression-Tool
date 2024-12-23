@@ -1,6 +1,6 @@
 #include"ZipFunc.h"
 #include <shobjidl.h> 
-#include "WinFileProc.h"
+#include "FileService.h"
 #include <chrono>
 #include "HuffmanCode.h"
 
@@ -14,7 +14,7 @@ void ZipFunc::StartZip(bool openMultiThread)
 	//-----------------------------------单线程-----------------------------
 	//创建 符号-频率表
 	auto symbolFrequency = new unordered_map<BYTE, size_t>;
-	unordered_map<path, unordered_map<BYTE, size_t>*>
+	
 	for (auto &filePath : filePathArr)
 	{
 		//获取普通文件中 符号-频率
@@ -44,21 +44,19 @@ void ZipFunc::StartZip(bool openMultiThread)
 	//计时1
 	auto middleTime = std::chrono::high_resolution_clock::now();
 	//写入压缩包首部
-	WinFileProc::WriteZipFileHeader(zipFileName, *codeLength);
+	//FileService::WriteZipFileHeader(zipFileName, *codeLength);
 	//写入文件
 	for (auto& filePath : filePathArr) {
 		if (is_regular_file(filePath)) {
 			//写入文件首部
-			HuffmanCode::GetWPL()
-			WinFileProc::WriteFileHeader(zipFileName,filePath,)
-			WinFileProc::ZipFile(filePath, zipFileName, *symbolCode);
+			FileService::ZipFile(filePath, zipFileName, *symbolCode);
 			continue;
 		}
 		for (const auto& entry : filesystem::recursive_directory_iterator(filePath))
 		{
 			if (entry.is_regular_file())
 			{
-				WinFileProc::ZipFile(entry, zipFileName, *symbolCode);
+				FileService::ZipFile(entry, zipFileName, *symbolCode);
 			}
 		}
 	}
@@ -184,7 +182,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
 				++item.iSubItem;//子项索引
-				uintmax_t size = WinFileProc::GetFileSize(filePathArr[x]);
+				uintmax_t size = FileService::GetFileSize(filePathArr[x]);
 				if(size >= (uintmax_t(2048*1024)*1024))_stprintf_s(tempTCHAR, _T("%.2f GB"), double(size)/(1024*1024*1024));
 				else if(size >= 2048*1024)_stprintf_s(tempTCHAR, _T("%.2f MB"), double(size)/(1024*1024));
 				else if(size >= 2048)_stprintf_s(tempTCHAR, _T("%.2f KB"), double(size)/1024);

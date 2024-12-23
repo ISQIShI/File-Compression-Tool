@@ -31,7 +31,7 @@ struct MapFileInfo
 	}
 };
 
-class WinFileProc
+class FileService
 {
 public:
 	//¥ÌŒÛ–≈œ¢µØ¥∞

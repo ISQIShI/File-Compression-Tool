@@ -1,60 +1,73 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="Service">
+      <UniqueIdentifier>{f2bbb434-21f0-431e-9c41-c2495182d6d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="Service\WindowBuilderService">
+      <UniqueIdentifier>{b9ab1a5d-469e-4501-ab80-42bef4c9f084}</UniqueIdentifier>
     </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Service\EncoderService">
+      <UniqueIdentifier>{a2c59ff0-d5da-4f42-b480-c3d48eb1b7d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ServiceImpl">
+      <UniqueIdentifier>{fe703341-a77a-4d73-a1ea-c07fac5c1ec6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ServiceImpl\WindowBuilderServiceImpl">
+      <UniqueIdentifier>{14c6270c-caa8-461e-a785-c6dbbe7276ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ServiceImpl\EncoderServiceImpl">
+      <UniqueIdentifier>{76ae5caf-f25d-41f4-beb9-42cf410410a9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FCT.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="MyWnds.cpp">
-      <Filter>源文件</Filter>
+      <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
     <ClCompile Include="MainWnd.cpp">
-      <Filter>源文件</Filter>
+      <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
     <ClCompile Include="HuffmanCode.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ZipFunc.cpp">
-      <Filter>源文件</Filter>
+      <Filter>ServiceImpl\EncoderServiceImpl</Filter>
     </ClCompile>
     <ClCompile Include="Logger.cpp">
-      <Filter>源文件</Filter>
+      <Filter>ServiceImpl</Filter>
     </ClCompile>
-    <ClCompile Include="WinFileProc.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>ServiceImpl</Filter>
+    </ClCompile>
+    <ClCompile Include="FCT.cpp" />
+    <ClCompile Include="FileService.cpp">
+      <Filter>ServiceImpl</Filter>
+    </ClCompile>
+    <ClCompile Include="ZipFunc.cpp">
+      <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyWnds.h">
-      <Filter>头文件</Filter>
+      <Filter>Service\WindowBuilderService</Filter>
     </ClInclude>
     <ClInclude Include="MainWnd.h">
-      <Filter>头文件</Filter>
+      <Filter>Service\WindowBuilderService</Filter>
     </ClInclude>
     <ClInclude Include="HuffmanCode.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ZipFunc.h">
-      <Filter>头文件</Filter>
+      <Filter>Service\EncoderService</Filter>
     </ClInclude>
     <ClInclude Include="Logger.h">
-      <Filter>头文件</Filter>
+      <Filter>Service</Filter>
     </ClInclude>
-    <ClInclude Include="WinFileProc.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Service</Filter>
     </ClInclude>
+    <ClInclude Include="FileService.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="ZipFunc.h">
+      <Filter>Service\WindowBuilderService</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ToDo.md" />
   </ItemGroup>
 </Project>

@@ -74,7 +74,7 @@ protected:
 	virtual LRESULT WM_DESTROY_WndProc();
 	//----------------------------------------------------------
 	
-	//枚举子窗口时调用的回调函数
+	//枚举遍历子窗口时调用的回调函数
 	static BOOL CALLBACK StaticEnumChildProc(HWND hwndChild, LPARAM lParam);
 	virtual BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
 
