@@ -1,92 +1,92 @@
-#pragma once
+ï»¿#pragma once
 #include<Windows.h>
 #include<CommCtrl.h>
 #include<tchar.h>
 
-//±àÒëÆ÷Ê¹ÓÃWin XPµÄĞÂÊ½¿Ø¼ş·ç¸ñ
+//ç¼–è¯‘å™¨ä½¿ç”¨Win XPçš„æ–°å¼æ§ä»¶é£æ ¼
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-//Ñ¹Ëõ°üºó×ºÃû
+//å‹ç¼©åŒ…åç¼€å
 #define SUFFIX ".ya"
 
-//³éÏóÀàMyWnds×÷ÎªÆäËû´°¿ÚÀàµÄÍ³Ò»¸¸Àà
+//æŠ½è±¡ç±»MyWndsä½œä¸ºå…¶ä»–çª—å£ç±»çš„ç»Ÿä¸€çˆ¶ç±»
 class MyWnds {
 protected:
-	//½ÓÊÜÓ¦ÓÃ³ÌĞòµÄµ±Ç°ÊµÀıµÄ¾ä±ú
+	//æ¥å—åº”ç”¨ç¨‹åºçš„å½“å‰å®ä¾‹çš„å¥æŸ„
 	static HINSTANCE hInstance;
-	//ÆÁÄ»×î´ó¿í¶È
+	//å±å¹•æœ€å¤§å®½åº¦
 	static int maxScreenWidth;
-	//ÆÁÄ»×î´ó¸ß¶È
+	//å±å¹•æœ€å¤§é«˜åº¦
 	static int maxScreenHeight;
-	//ÁÙÊ±¶ÔÏó×ÊÔ´
+	//ä¸´æ—¶å¯¹è±¡èµ„æº
 	HGDIOBJ tempObject[10] = {};
-	//³¤ÆÚ¶ÔÏó×ÊÔ´
+	//é•¿æœŸå¯¹è±¡èµ„æº
 	HGDIOBJ lTSObject[10] = {};
-	//´°¿Ú¿í¶È
+	//çª—å£å®½åº¦
 	UINT wndWidth = NULL;
-	//´°¿Ú¸ß¶È
+	//çª—å£é«˜åº¦
 	UINT wndHeight = NULL;
-	//Ä£Ì¬¶Ô»°¿ò²ÎÊı
+	//æ¨¡æ€å¯¹è¯æ¡†å‚æ•°
 	HWND isModalDialog = NULL;
-	//´Ó´°¿Ú¹ı³Ì»ñÈ¡µÄ²ÎÊı
+	//ä»çª—å£è¿‡ç¨‹è·å–çš„å‚æ•°
 	HWND hwnd_WndProc = NULL;
 	UINT uMsg_WndProc = NULL;
 	WPARAM wParam_WndProc = NULL;
 	LPARAM lParam_WndProc = NULL;
 	
-	//´íÎóĞÅÏ¢µ¯´°
+	//é”™è¯¯ä¿¡æ¯å¼¹çª—
 	void ErrorMessageBox(const HWND& hwnd = NULL, const TCHAR* msg = _T(""), bool showErrorCode = true);
-	//²âÊÔĞÅÏ¢µ¯´°
-	void TestMessageBox(const HWND& hwnd = NULL, const TCHAR* text = _T("²âÊÔ"), const TCHAR* title = _T("²âÊÔ"),UINT type = MB_OK);
-	//×¢²á´°¿ÚÀà
+	//æµ‹è¯•ä¿¡æ¯å¼¹çª—
+	void TestMessageBox(const HWND& hwnd = NULL, const TCHAR* text = _T("æµ‹è¯•"), const TCHAR* title = _T("æµ‹è¯•"),UINT type = MB_OK);
+	//æ³¨å†Œçª—å£ç±»
 	virtual ATOM RegisterWndClass() = 0;
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	virtual HWND CreateWnd() = 0;
-	//¹¹½¨ÏûÏ¢Ñ­»·
+	//æ„å»ºæ¶ˆæ¯å¾ªç¯
 	virtual WPARAM MessageLoop(const HWND& hwnd_IsDialogMessage);
 
-	//¾²Ì¬´°¿Ú¹ı³Ì
+	//é™æ€çª—å£è¿‡ç¨‹
 	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	//´°¿Ú¹ı³Ì
+	//çª—å£è¿‡ç¨‹
 	virtual LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	//--------------------´¦Àí´°¿ÚÏûÏ¢µÄº¯Êı---------------------
+	//--------------------å¤„ç†çª—å£æ¶ˆæ¯çš„å‡½æ•°---------------------
 	virtual LRESULT WM_COMMAND_WndProc();
 	virtual LRESULT WM_NOTIFY_WndProc();
-	//»æÖÆstaticºÍedit(ES_READONLY)¿Ø¼ş
+	//ç»˜åˆ¶staticå’Œedit(ES_READONLY)æ§ä»¶
 	virtual LRESULT WM_CTLCOLORSTATIC_WndProc();
-	//»æÖÆ´°¿Ú¸üĞÂÇøÓò
+	//ç»˜åˆ¶çª—å£æ›´æ–°åŒºåŸŸ
 	virtual LRESULT WM_PAINT_WndProc();
-	//°´ÏÂÊó±ê×ó¼ü
+	//æŒ‰ä¸‹é¼ æ ‡å·¦é”®
 	virtual LRESULT WM_LBUTTONDOWN_WndProc();
-	//ËÉ¿ªÊó±ê×ó¼ü
+	//æ¾å¼€é¼ æ ‡å·¦é”®
 	virtual LRESULT	WM_LBUTTONUP_WndProc();
-	//´¦Àí´°¿Ú´óĞ¡/Î»ÖÃ·¢Éú¸Ä±äºóÊÕµ½µÄÏûÏ¢
+	//å¤„ç†çª—å£å¤§å°/ä½ç½®å‘ç”Ÿæ”¹å˜åæ”¶åˆ°çš„æ¶ˆæ¯
 	virtual LRESULT WM_WINDOWPOSCHANGING_WndProc();
-	//´¦ÀíÉè¶¨ºÃ´°¿Ú´óĞ¡/Î»ÖÃºóµÄ·´À¡ĞÅÏ¢
+	//å¤„ç†è®¾å®šå¥½çª—å£å¤§å°/ä½ç½®åçš„åé¦ˆä¿¡æ¯
 	virtual LRESULT WM_WINDOWPOSCHANGED_WndProc();
-	//»ñÈ¡´°¿ÚĞÂµÄ¿í¶ÈºÍ¸ß¶È
+	//è·å–çª—å£æ–°çš„å®½åº¦å’Œé«˜åº¦
 	virtual LRESULT WM_SIZE_WndProc();
-	//´´½¨´°¿ÚÊ±·¢ËÍµÄÏûÏ¢
+	//åˆ›å»ºçª—å£æ—¶å‘é€çš„æ¶ˆæ¯
 	virtual LRESULT WM_CREATE_WndProc();
-	//µã»÷¹Ø±Õ°´Å¥
+	//ç‚¹å‡»å…³é—­æŒ‰é’®
 	virtual LRESULT WM_CLOSE_WndProc();
-	//Ïú»Ù´°¿Ú
+	//é”€æ¯çª—å£
 	virtual LRESULT WM_DESTROY_WndProc();
 	//----------------------------------------------------------
 	
-	//Ã¶¾Ù±éÀú×Ó´°¿ÚÊ±µ÷ÓÃµÄ»Øµ÷º¯Êı
+	//æšä¸¾éå†å­çª—å£æ—¶è°ƒç”¨çš„å›è°ƒå‡½æ•°
 	static BOOL CALLBACK StaticEnumChildProc(HWND hwndChild, LPARAM lParam);
 	virtual BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
 
 public:
-	//»ñÈ¡Ó¦ÓÃ³ÌĞòµÄµ±Ç°ÊµÀıµÄ¾ä±ú
+	//è·å–åº”ç”¨ç¨‹åºçš„å½“å‰å®ä¾‹çš„å¥æŸ„
 	static HINSTANCE GethInstance(){ return hInstance; }
-	//Éè¶¨Ó¦ÓÃ³ÌĞòµÄµ±Ç°ÊµÀıµÄ¾ä±ú
+	//è®¾å®šåº”ç”¨ç¨‹åºçš„å½“å‰å®ä¾‹çš„å¥æŸ„
 	static void SethInstance(HINSTANCE hIn) { hInstance = hIn; }
-	//»ñÈ¡´°¿ÚµÄ¾ä±ú
+	//è·å–çª—å£çš„å¥æŸ„
 	HWND GetWndHwnd() const { return hwnd_WndProc; }
 	UINT GetWndWidth()const { return wndWidth; }
 	UINT GetWndHeight()const { return wndHeight; }
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	virtual WPARAM Wnd(bool needMessageLoop = false);
 };

@@ -1,30 +1,30 @@
-#include"ZipFunc.h"
+ï»¿#include"ZipFunc.h"
 
-//×¢²áÖ÷´°¿ÚÀà
+//æ³¨å†Œä¸»çª—å£ç±»
 ATOM MainWnd::RegisterWndClass()
 {
-	//ÊµÀı»¯´°¿ÚÀà¶ÔÏó---Ö÷´°¿Ú
+	//å®ä¾‹åŒ–çª—å£ç±»å¯¹è±¡---ä¸»çª—å£
 	WNDCLASSEX mainWndClass = { 0 };
 	mainWndClass.cbSize = sizeof(WNDCLASSEX);
-	mainWndClass.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;//ÀàÑùÊ½
-	mainWndClass.lpfnWndProc = StaticWndProc;//´°¿Ú¹ı³Ì
-	mainWndClass.hInstance = hInstance;//³ÌĞòÊµÀı
-	mainWndClass.hbrBackground = HBRUSH(6);//Àà±³¾°»­Ë¢
-	mainWndClass.lpszClassName = _T("mainWndClassName");//´°¿ÚÀàÃû
-	mainWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);//´°¿ÚÍ¼±ê
+	mainWndClass.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;//ç±»æ ·å¼
+	mainWndClass.lpfnWndProc = StaticWndProc;//çª—å£è¿‡ç¨‹
+	mainWndClass.hInstance = hInstance;//ç¨‹åºå®ä¾‹
+	mainWndClass.hbrBackground = HBRUSH(6);//ç±»èƒŒæ™¯ç”»åˆ·
+	mainWndClass.lpszClassName = _T("mainWndClassName");//çª—å£ç±»å
+	mainWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);//çª—å£å›¾æ ‡
 	return RegisterClassEx(&mainWndClass);
 }
 
-//´´½¨Ö÷´°¿Ú
+//åˆ›å»ºä¸»çª—å£
 HWND MainWnd::CreateWnd()
 {
-	//´´½¨´°¿Ú---Ö÷´°¿Ú
+	//åˆ›å»ºçª—å£---ä¸»çª—å£
 	HWND mainWndHwnd = CreateWindowEx(
-		WS_EX_CONTROLPARENT | WS_EX_ACCEPTFILES, _T("mainWndClassName"), _T("Ñ¼Ò»Ñ¹"), WS_TILEDWINDOW,
+		WS_EX_CONTROLPARENT | WS_EX_ACCEPTFILES, _T("mainWndClassName"), _T("é¸­ä¸€å‹"), WS_TILEDWINDOW,
 		0.5 * (maxScreenWidth - wndWidth), 0.5 * (maxScreenHeight - wndHeight), wndWidth, wndHeight,
 		NULL, NULL, hInstance, this
 	);
-	//ÏÔÊ¾´°¿Ú
+	//æ˜¾ç¤ºçª—å£
 	if (mainWndHwnd) ShowWindow(mainWndHwnd, SW_SHOW);
 	return mainWndHwnd;
 }
@@ -32,33 +32,33 @@ HWND MainWnd::CreateWnd()
 LRESULT MainWnd::WM_COMMAND_WndProc()
 {
 	HWND hwnd = (HWND)lParam_WndProc;
-	//ÓÉ¹¤¾ßÀ¸¿Ø¼ş·¢À´µÄÏûÏ¢
+	//ç”±å·¥å…·æ æ§ä»¶å‘æ¥çš„æ¶ˆæ¯
 	if (hwnd == GetDlgItem(hwnd_WndProc,toolBarID)) {
-		//Í¨Öª´úÂëÊÇµã»÷°´Å¥
+		//é€šçŸ¥ä»£ç æ˜¯ç‚¹å‡»æŒ‰é’®
 		if (HIWORD(wParam_WndProc) == BN_CLICKED) {
-			//¸ù¾İµã»÷µÄ°´Å¥²»Í¬Ö´ĞĞ²»Í¬¹¦ÄÜ
+			//æ ¹æ®ç‚¹å‡»çš„æŒ‰é’®ä¸åŒæ‰§è¡Œä¸åŒåŠŸèƒ½
 			switch (LOWORD(wParam_WndProc)) {
-			case buttonOpenID_ToolBar://´ò¿ª
+			case buttonOpenID_ToolBar://æ‰“å¼€
 			{
 				TestMessageBox();
 				break;
 			}
-			case buttonPreviewID_ToolBar://Ô¤ÀÀ
+			case buttonPreviewID_ToolBar://é¢„è§ˆ
 			{
 
 				break;
 			}
-			case buttonZipID_ToolBar://Ñ¹Ëõ
+			case buttonZipID_ToolBar://å‹ç¼©
 			{
 				ZipFunc::GetZipFunc().Wnd(true);
 				break;
 			}
-			case buttonUnpackID_ToolBar://½âÑ¹
+			case buttonUnpackID_ToolBar://è§£å‹
 			{
 
 				break;
 			}
-			case buttonSetID_ToolBar://ÉèÖÃ
+			case buttonSetID_ToolBar://è®¾ç½®
 			{
 
 				break;
@@ -67,7 +67,7 @@ LRESULT MainWnd::WM_COMMAND_WndProc()
 		}
 	}
 	else {
-		//ÆäËûÎ´´¦ÀíµÄÏûÏ¢Ê¹ÓÃÄ¬ÈÏ´°¿Ú¹ı³Ì´¦Àí
+		//å…¶ä»–æœªå¤„ç†çš„æ¶ˆæ¯ä½¿ç”¨é»˜è®¤çª—å£è¿‡ç¨‹å¤„ç†
 		return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 	}
 	return 0;
@@ -75,34 +75,34 @@ LRESULT MainWnd::WM_COMMAND_WndProc()
 
 LRESULT MainWnd::WM_NOTIFY_WndProc()
 {
-	//»ñÈ¡ÏûÏ¢Ğ¯´øµÄĞÅÏ¢
+	//è·å–æ¶ˆæ¯æºå¸¦çš„ä¿¡æ¯
 	LPNMHDR lpnmhdr = (LPNMHDR)lParam_WndProc;
 
-	//ÓÉ¹¤¾ßÀ¸¿Ø¼ş·¢À´µÄÏûÏ¢
+	//ç”±å·¥å…·æ æ§ä»¶å‘æ¥çš„æ¶ˆæ¯
 	if (lpnmhdr->idFrom == toolBarID){
-		//ÅĞ¶ÏÍ¨Öª´úÂë
+		//åˆ¤æ–­é€šçŸ¥ä»£ç 
 		switch (lpnmhdr->code) {
-		case NM_CUSTOMDRAW: //Í¨Öª¿Ø¼şµÄ¸¸´°¿Ú×Ô¶¨Òå»æÍ¼²Ù×÷
+		case NM_CUSTOMDRAW: //é€šçŸ¥æ§ä»¶çš„çˆ¶çª—å£è‡ªå®šä¹‰ç»˜å›¾æ“ä½œ
 		{
-			//»ñÈ¡Í¨ÖªĞ¯´øµÄÏà¹ØĞÅÏ¢
+			//è·å–é€šçŸ¥æºå¸¦çš„ç›¸å…³ä¿¡æ¯
 			LPNMTBCUSTOMDRAW lpnmtbcd = (LPNMTBCUSTOMDRAW)lParam_WndProc;
 
-			//ÅĞ¶Ïµ±Ç°»æÍ¼½×¶Î
+			//åˆ¤æ–­å½“å‰ç»˜å›¾é˜¶æ®µ
 			switch (lpnmtbcd->nmcd.dwDrawStage)
 			{
-			case CDDS_PREPAINT: //ÔÚ»æÖÆÖÜÆÚ¿ªÊ¼Ö®Ç°
+			case CDDS_PREPAINT: //åœ¨ç»˜åˆ¶å‘¨æœŸå¼€å§‹ä¹‹å‰
 			{
-				//´´½¨»­Ë¢
+				//åˆ›å»ºç”»åˆ·
 				tempObject[0] = CreateSolidBrush(RGB(45, 138, 221));
-				//×Ô¶¨Òå¹¤¾ßÀ¸±³¾°
+				//è‡ªå®šä¹‰å·¥å…·æ èƒŒæ™¯
 				FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, (HBRUSH)tempObject[0]);
-				//Ïú»Ù»­Ë¢ÊÍ·Å×ÊÔ´
+				//é”€æ¯ç”»åˆ·é‡Šæ”¾èµ„æº
 				DeleteObject(tempObject[0]);
 				tempObject[0] = NULL;
-				//Í¨Öª¹¤¾ßÀ¸µÄËùÓĞ×ÓÏî½øĞĞ×Ô¶¨Òå»æÖÆ
+				//é€šçŸ¥å·¥å…·æ çš„æ‰€æœ‰å­é¡¹è¿›è¡Œè‡ªå®šä¹‰ç»˜åˆ¶
 				return CDRF_NOTIFYITEMDRAW;
 			}
-			case CDDS_ITEMPREPAINT://ÔÚ»æÖÆÏî(°´Å¥)Ö®Ç°
+			case CDDS_ITEMPREPAINT://åœ¨ç»˜åˆ¶é¡¹(æŒ‰é’®)ä¹‹å‰
 			{
 				RECT tempRC = lpnmtbcd->nmcd.rc;
 				tempRC.left += 4;
@@ -110,265 +110,265 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 				tempRC.top += 4;
 				tempRC.bottom -= 1;
 
-				//ÉèÖÃµã»÷°´Å¥Ê±µÄ±³¾°É«
+				//è®¾ç½®ç‚¹å‡»æŒ‰é’®æ—¶çš„èƒŒæ™¯è‰²
 				if (SendMessage(lpnmhdr->hwndFrom, TB_ISBUTTONPRESSED, lpnmtbcd->nmcd.dwItemSpec, 0) && (lpnmtbcd->nmcd.uItemState & CDIS_HOT)) {
-					//´´½¨»­Ë¢
+					//åˆ›å»ºç”»åˆ·
 					tempObject[0] = CreateSolidBrush(RGB(12, 74, 129));
-					//Ìî³ä°´Å¥ÑÕÉ«
+					//å¡«å……æŒ‰é’®é¢œè‰²
 					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
-					//Ïú»Ù»­Ë¢ÊÍ·Å×ÊÔ´
+					//é”€æ¯ç”»åˆ·é‡Šæ”¾èµ„æº
 					DeleteObject(tempObject[0]);
 					tempObject[0] = NULL;
 				}
-				else if ((lpnmtbcd->nmcd.uItemState & CDIS_HOT) || (lpnmtbcd->nmcd.uItemState & CDIS_MARKED)) //¼ì²éÈÈ×·×Ù×´Ì¬
+				else if ((lpnmtbcd->nmcd.uItemState & CDIS_HOT) || (lpnmtbcd->nmcd.uItemState & CDIS_MARKED)) //æ£€æŸ¥çƒ­è¿½è¸ªçŠ¶æ€
 				{
-					//´´½¨»­Ë¢
+					//åˆ›å»ºç”»åˆ·
 					tempObject[0] = CreateSolidBrush(RGB(17, 99, 172));
-					//ÉèÖÃÈÈ×·×Ù±³¾°É«
+					//è®¾ç½®çƒ­è¿½è¸ªèƒŒæ™¯è‰²
 					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
-					//Ïú»Ù»­Ë¢ÊÍ·Å×ÊÔ´
+					//é”€æ¯ç”»åˆ·é‡Šæ”¾èµ„æº
 					DeleteObject(tempObject[0]);
 					tempObject[0] = NULL;
-					//Èç¹û±»±ê¼ÇÔòÈ¡Ïû±ê¼Ç×´Ì¬
+					//å¦‚æœè¢«æ ‡è®°åˆ™å–æ¶ˆæ ‡è®°çŠ¶æ€
 					//if (lpnmtbcd->nmcd.uItemState & CDIS_MARKED)SendMessage(lpnmhdr->hwndFrom, TB_MARKBUTTON, lpnmtbcd->nmcd.dwItemSpec, FALSE);
 				}
 				else {
-					//ÉèÖÃÄ¬ÈÏ±³¾°É«
+					//è®¾ç½®é»˜è®¤èƒŒæ™¯è‰²
 					//FillRect(lpnmtbcd->nmcd.hdc, &lpnmtbcd->nmcd.rc, tempObject[0]);
 				}
-				//»ñÈ¡µ±Ç°½«Òª»æÖÆµÄ°´Å¥µÄÑùÊ½ĞÅÏ¢
+				//è·å–å½“å‰å°†è¦ç»˜åˆ¶çš„æŒ‰é’®çš„æ ·å¼ä¿¡æ¯
 				TBBUTTONINFO tbbInfo;
 				tbbInfo.cbSize = sizeof(TBBUTTONINFO);
 				tbbInfo.dwMask = TBIF_STYLE;
 				SendMessage(lpnmhdr->hwndFrom, TB_GETBUTTONINFO, lpnmtbcd->nmcd.dwItemSpec, LPARAM(&tbbInfo));
-				// Èç¹ûÑùÊ½ÊÇBTNS_DROPDOWN£¬»æÖÆ·Ö¸ô·ûÓëÏÂÀ­¼ıÍ·²¿·Ö
+				// å¦‚æœæ ·å¼æ˜¯BTNS_DROPDOWNï¼Œç»˜åˆ¶åˆ†éš”ç¬¦ä¸ä¸‹æ‹‰ç®­å¤´éƒ¨åˆ†
 				if (tbbInfo.fsStyle & BTNS_DROPDOWN) {
-					// »æÖÆ·Ö¸ô·ûµÄÄÇÌõÊúÏß
-					//¼ıÍ·ÇøÓò¿í¶ÈÎª16
+					// ç»˜åˆ¶åˆ†éš”ç¬¦çš„é‚£æ¡ç«–çº¿
+					//ç®­å¤´åŒºåŸŸå®½åº¦ä¸º16
 					tempRC.left = lpnmtbcd->nmcd.rc.right - 17;
 					tempRC.right = tempRC.left + 1;
-					//´´½¨»­Ë¢
+					//åˆ›å»ºç”»åˆ·
 					tempObject[0] = CreateSolidBrush(RGB(45, 138, 221));
-					//»æÖÆÓë¹¤¾ßÀ¸±³¾°ÏàÍ¬ÑÕÉ«µÄÊúÏß
+					//ç»˜åˆ¶ä¸å·¥å…·æ èƒŒæ™¯ç›¸åŒé¢œè‰²çš„ç«–çº¿
 					FillRect(lpnmtbcd->nmcd.hdc, &tempRC, (HBRUSH)tempObject[0]);
-					//Ïú»Ù»­Ë¢ÊÍ·Å×ÊÔ´
+					//é”€æ¯ç”»åˆ·é‡Šæ”¾èµ„æº
 					DeleteObject(tempObject[0]);
 					tempObject[0] = NULL;
-					//ÏÂÀ­¼ıÍ·ËùÔÚµÄÇøÓò
+					//ä¸‹æ‹‰ç®­å¤´æ‰€åœ¨çš„åŒºåŸŸ
 					tempRC = { lpnmtbcd->nmcd.rc.right - 16, lpnmtbcd->nmcd.rc.top, lpnmtbcd->nmcd.rc.right, lpnmtbcd->nmcd.rc.bottom };
-					//¼ıÍ·Ëù´¦µÄÖĞĞÄµã
+					//ç®­å¤´æ‰€å¤„çš„ä¸­å¿ƒç‚¹
 					int centerX = (tempRC.left + tempRC.right) / 2;
 					int centerY = (tempRC.top + tempRC.bottom) / 2;
-					//¹¹½¨µ¹Èı½ÇµÄ¶¥µã×ø±ê
+					//æ„å»ºå€’ä¸‰è§’çš„é¡¶ç‚¹åæ ‡
 					POINT points[] = {
-						{centerX - 4, centerY - 2},//×óÉÏ½Ç
-						{centerX, centerY + 2},//µ×²¿
-						{centerX + 5, centerY - 3 }//ÓÒÉÏ½Ç
+						{centerX - 4, centerY - 2},//å·¦ä¸Šè§’
+						{centerX, centerY + 2},//åº•éƒ¨
+						{centerX + 5, centerY - 3 }//å³ä¸Šè§’
 					};
-					//´´½¨°×É«»­±Ê
+					//åˆ›å»ºç™½è‰²ç”»ç¬”
 					tempObject[0] = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
 					SelectObject(lpnmtbcd->nmcd.hdc, tempObject[0]);
-					//»æÖÆ¼ıÍ·(ÕÛÏß)
+					//ç»˜åˆ¶ç®­å¤´(æŠ˜çº¿)
 					Polyline(lpnmtbcd->nmcd.hdc, points, 3);
-					//Ïú»Ù»­±ÊÊÍ·Å×ÊÔ´
+					//é”€æ¯ç”»ç¬”é‡Šæ”¾èµ„æº
 					DeleteObject(tempObject[0]);
 					tempObject[0] = NULL;
 				}
 
-				//´´½¨×ÖÌå
+				//åˆ›å»ºå­—ä½“
 				static HFONT newFont = CreateFont(
 					35, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 					DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-					DEFAULT_PITCH | FF_SWISS, _T("¿¬Ìå")); // ´´½¨Ò»¸ö ¿¬Ìå ×ÖÌå£¬35px ´óĞ¡
-				// ÉèÖÃ×ÖÌåºÍÎÄ×ÖÑÕÉ«
+					DEFAULT_PITCH | FF_SWISS, _T("æ¥·ä½“")); // åˆ›å»ºä¸€ä¸ª æ¥·ä½“ å­—ä½“ï¼Œ35px å¤§å°
+				// è®¾ç½®å­—ä½“å’Œæ–‡å­—é¢œè‰²
 				lTSObject[0] = newFont;
-				HFONT oldFont = (HFONT)SelectObject(lpnmtbcd->nmcd.hdc, lTSObject[0]);//Ñ¡ÔñÉèÖÃ×Ô¶¨Òå×ÖÌå
-				SetTextColor(lpnmtbcd->nmcd.hdc, RGB(255, 255, 255));//ÎÄ×ÖÑÕÉ«
-				SetBkMode(lpnmtbcd->nmcd.hdc, TRANSPARENT);//±³¾°Í¸Ã÷
+				HFONT oldFont = (HFONT)SelectObject(lpnmtbcd->nmcd.hdc, lTSObject[0]);//é€‰æ‹©è®¾ç½®è‡ªå®šä¹‰å­—ä½“
+				SetTextColor(lpnmtbcd->nmcd.hdc, RGB(255, 255, 255));//æ–‡å­—é¢œè‰²
+				SetBkMode(lpnmtbcd->nmcd.hdc, TRANSPARENT);//èƒŒæ™¯é€æ˜
 
-				// ×Ô¶¨Òå»æÖÆÎÄ±¾£¨°´Å¥ÎÄ±¾£©
+				// è‡ªå®šä¹‰ç»˜åˆ¶æ–‡æœ¬ï¼ˆæŒ‰é’®æ–‡æœ¬ï¼‰
 				TCHAR buttonText[20];
 				SendMessage(lpnmhdr->hwndFrom, TB_GETBUTTONTEXT, lpnmtbcd->nmcd.dwItemSpec, (LPARAM)buttonText);
 				DrawText(lpnmtbcd->nmcd.hdc, buttonText, -1, &lpnmtbcd->nmcd.rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-				//»Ö¸´×ÖÌå
+				//æ¢å¤å­—ä½“
 				SelectObject(lpnmtbcd->nmcd.hdc, oldFont);
-				return CDRF_SKIPDEFAULT; //Ìø¹ıÄ¬ÈÏ»æÖÆÂß¼­
+				return CDRF_SKIPDEFAULT; //è·³è¿‡é»˜è®¤ç»˜åˆ¶é€»è¾‘
 			}
 			}
 			break;
 		}
-		case NM_CLICK://ÔÚ¹¤¾ßÀ¸¿Ø¼şµÄÇøÓòËÉ¿ªÒÑ¾­°´ÏÂµÄÊó±êºó·¢ËÍµÄÏûÏ¢
+		case NM_CLICK://åœ¨å·¥å…·æ æ§ä»¶çš„åŒºåŸŸæ¾å¼€å·²ç»æŒ‰ä¸‹çš„é¼ æ ‡åå‘é€çš„æ¶ˆæ¯
 		{
 			LPNMMOUSE nmouse = (LPNMMOUSE)lParam_WndProc;
 
-			//»ñÈ¡µ±Ç°ËÉ¿ªÊó±êÎ»ÖÃµÄ°´Å¥µÄÑùÊ½ĞÅÏ¢
+			//è·å–å½“å‰æ¾å¼€é¼ æ ‡ä½ç½®çš„æŒ‰é’®çš„æ ·å¼ä¿¡æ¯
 			TBBUTTONINFO tbbInfo;
 			tbbInfo.cbSize = sizeof(TBBUTTONINFO);
 			tbbInfo.dwMask = TBIF_STYLE;
 			SendMessage(lpnmhdr->hwndFrom, TB_GETBUTTONINFO, nmouse->dwItemSpec, LPARAM(&tbbInfo));
-			//»ñÈ¡Ë÷Òı
+			//è·å–ç´¢å¼•
 			int index = SendMessage(lpnmhdr->hwndFrom, TB_COMMANDTOINDEX, nmouse->dwItemSpec, 0);
-			//Èç¹ûÑùÊ½ÊÇBTNS_DROPDOWNÇÒÖ®Ç°µã»÷µÄÊ±ºòÊÇÔÚµã»÷ÏÂÀ­¼ıÍ·
+			//å¦‚æœæ ·å¼æ˜¯BTNS_DROPDOWNä¸”ä¹‹å‰ç‚¹å‡»çš„æ—¶å€™æ˜¯åœ¨ç‚¹å‡»ä¸‹æ‹‰ç®­å¤´
 			if ((tbbInfo.fsStyle & BTNS_DROPDOWN) && SendMessage(lpnmhdr->hwndFrom, TB_ISBUTTONPRESSED, nmouse->dwItemSpec, 0)) {
-				//¼ìË÷°´Å¥µÄÇøÓò
+				//æ£€ç´¢æŒ‰é’®çš„åŒºåŸŸ
 				RECT rc;
 				SendMessage(lpnmhdr->hwndFrom, TB_GETITEMRECT, index, (LPARAM)&rc);
-				//Éè¶¨ËÉ¿ª°´ÏÂ×´Ì¬ºÍ±ê¼Ç×´Ì¬
+				//è®¾å®šæ¾å¼€æŒ‰ä¸‹çŠ¶æ€å’Œæ ‡è®°çŠ¶æ€
 				SendMessage(lpnmhdr->hwndFrom, TB_PRESSBUTTON, nmouse->dwItemSpec, FALSE);
 				SendMessage(lpnmhdr->hwndFrom, TB_MARKBUTTON, nmouse->dwItemSpec, TRUE);
-				//ÖØ»æ¸Ã°´Å¥
+				//é‡ç»˜è¯¥æŒ‰é’®
 				InvalidateRect(lpnmhdr->hwndFrom, &rc, TRUE);
-				//Èç¹ûËÉ¿ªÊó±êµÄÎ»ÖÃÔÚÏÂÀ­¼ıÍ·ÇøÓòÄÚ
+				//å¦‚æœæ¾å¼€é¼ æ ‡çš„ä½ç½®åœ¨ä¸‹æ‹‰ç®­å¤´åŒºåŸŸå†…
 				if (nmouse->pt.x >= rc.right - 16 && nmouse->pt.x <= rc.right) {
-					//´´½¨ÏÂÀ­²Ëµ¥(Îªstatic±äÁ¿£¬Ö»´´½¨Ò»´Î)
+					//åˆ›å»ºä¸‹æ‹‰èœå•(ä¸ºstaticå˜é‡ï¼Œåªåˆ›å»ºä¸€æ¬¡)
 					static HMENU hMenu = CreatePopupMenu();
 					if (!GetMenuItemCount(hMenu)) {
-						AppendMenu(hMenu, MF_STRING, firstPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("Ñ¡Ïî 1"));
-						AppendMenu(hMenu, MF_STRING, secondPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("Ñ¡Ïî 2"));
-						AppendMenu(hMenu, MF_STRING, thirdPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("Ñ¡Ïî 3"));
+						AppendMenu(hMenu, MF_STRING, firstPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("é€‰é¡¹ 1"));
+						AppendMenu(hMenu, MF_STRING, secondPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("é€‰é¡¹ 2"));
+						AppendMenu(hMenu, MF_STRING, thirdPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("é€‰é¡¹ 3"));
 					}
-					// ×ª»»ÎªÆÁÄ»×ø±ê
+					// è½¬æ¢ä¸ºå±å¹•åæ ‡
 					MapWindowPoints(lpnmhdr->hwndFrom, HWND_DESKTOP, (LPPOINT)&rc, 2);
-					// ÏÔÊ¾²Ëµ¥
+					// æ˜¾ç¤ºèœå•
 					int choice = TrackPopupMenu(
 						hMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON,
 						rc.left + 4, rc.bottom, 0, hwnd_WndProc, NULL);
-					//Ïú»Ù²Ëµ¥
+					//é”€æ¯èœå•
 					//DestroyMenu(hMenu);
-					// ´¦Àí²Ëµ¥ÃüÁî
+					// å¤„ç†èœå•å‘½ä»¤
 					if (choice) {
 						switch (choice) {
 						case firstPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("Ñ¡Ïî 1 ±»µã»÷"), _T("ĞÅÏ¢"), MB_OK);
+							MessageBox(hwnd_WndProc, _T("é€‰é¡¹ 1 è¢«ç‚¹å‡»"), _T("ä¿¡æ¯"), MB_OK);
 							break;
 						case secondPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("Ñ¡Ïî 2 ±»µã»÷"), _T("ĞÅÏ¢"), MB_OK);
+							MessageBox(hwnd_WndProc, _T("é€‰é¡¹ 2 è¢«ç‚¹å‡»"), _T("ä¿¡æ¯"), MB_OK);
 							break;
 						case thirdPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("Ñ¡Ïî 3 ±»µã»÷"), _T("ĞÅÏ¢"), MB_OK);
+							MessageBox(hwnd_WndProc, _T("é€‰é¡¹ 3 è¢«ç‚¹å‡»"), _T("ä¿¡æ¯"), MB_OK);
 							break;
 						}
 					}
 				}
-				//È¡Ïû±ê¼Ç×´Ì¬
+				//å–æ¶ˆæ ‡è®°çŠ¶æ€
 				SendMessage(lpnmhdr->hwndFrom, TB_MARKBUTTON, nmouse->dwItemSpec, FALSE);
-				//ÖØ»æ¸Ã°´Å¥
+				//é‡ç»˜è¯¥æŒ‰é’®
 				InvalidateRect(lpnmhdr->hwndFrom, &rc, TRUE);
 			}
 			else {
-				return FALSE;//Ä¬ÈÏ´¦Àíµ¥»÷
+				return FALSE;//é»˜è®¤å¤„ç†å•å‡»
 			}
-			//Êó±êµ¥»÷ÒÑ´¦Àí
+			//é¼ æ ‡å•å‡»å·²å¤„ç†
 			return TRUE;
 		}
 		
-		case TBN_DROPDOWN: //µ±ÓÃ»§µ¥»÷ÏÂÀ­°´Å¥Ê±£¬ÓÉ¹¤¾ßÀ¸¿Ø¼ş·¢ËÍ
+		case TBN_DROPDOWN: //å½“ç”¨æˆ·å•å‡»ä¸‹æ‹‰æŒ‰é’®æ—¶ï¼Œç”±å·¥å…·æ æ§ä»¶å‘é€
 		{
-			//»ñÈ¡Í¨ÖªĞ¯´øµÄÏà¹ØĞÅÏ¢
+			//è·å–é€šçŸ¥æºå¸¦çš„ç›¸å…³ä¿¡æ¯
 			LPNMTOOLBAR lpnmtb = (LPNMTOOLBAR)lParam_WndProc;
-			//Éè¶¨°´ÏÂ×´Ì¬
-			SendMessage(lpnmhdr->hwndFrom, TB_PRESSBUTTON, lpnmtb->iItem, TRUE);//¼ì²â TB_ISBUTTONPRESSED
-			//ÖØ»æ¸Ã°´Å¥
+			//è®¾å®šæŒ‰ä¸‹çŠ¶æ€
+			SendMessage(lpnmhdr->hwndFrom, TB_PRESSBUTTON, lpnmtb->iItem, TRUE);//æ£€æµ‹ TB_ISBUTTONPRESSED
+			//é‡ç»˜è¯¥æŒ‰é’®
 			InvalidateRect(lpnmhdr->hwndFrom, &lpnmtb->rcButton, TRUE);
-			//SendMessage(lpnmhdr->hwndFrom, TB_CHECKBUTTON, lpnmtb->iItem, TRUE);//¼ì²â TB_ISBUTTONCHECKED
-			//SendMessage(lpnmhdr->hwndFrom, TB_INDETERMINATE, lpnmtb->iItem, TRUE);//¼ì²â TB_ISBUTTONINDETERMINATE
+			//SendMessage(lpnmhdr->hwndFrom, TB_CHECKBUTTON, lpnmtb->iItem, TRUE);//æ£€æµ‹ TB_ISBUTTONCHECKED
+			//SendMessage(lpnmhdr->hwndFrom, TB_INDETERMINATE, lpnmtb->iItem, TRUE);//æ£€æµ‹ TB_ISBUTTONINDETERMINATE
 			
-			//ÒÑ´¦ÀíÏÂÀ­ÁĞ±í
+			//å·²å¤„ç†ä¸‹æ‹‰åˆ—è¡¨
 			return TBDDRET_DEFAULT;
 		}
 		}
 	}
 	else {
-		//ÆäËûÎ´´¦ÀíµÄÏûÏ¢Ê¹ÓÃÄ¬ÈÏ´°¿Ú¹ı³Ì´¦Àí
+		//å…¶ä»–æœªå¤„ç†çš„æ¶ˆæ¯ä½¿ç”¨é»˜è®¤çª—å£è¿‡ç¨‹å¤„ç†
 		return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 	}
-	//Ç°Ãæ¾­¹ı´¦ÀíºóÃ»ÓĞ return Ö±½Ó break ³öÀ´µÄ²ÉÓÃÍ³Ò» return 0 ·ÀÖ¹´ÖĞÄ´óÒâ
+	//å‰é¢ç»è¿‡å¤„ç†åæ²¡æœ‰ return ç›´æ¥ break å‡ºæ¥çš„é‡‡ç”¨ç»Ÿä¸€ return 0 é˜²æ­¢ç²—å¿ƒå¤§æ„
 	return 0;
 }
 
-//ÏŞÖÆ´°¿Ú×îĞ¡³ß´ç
+//é™åˆ¶çª—å£æœ€å°å°ºå¯¸
 LRESULT MainWnd::WM_WINDOWPOSCHANGING_WndProc()
 {
-	//Éè¶¨ÁÙÊ±Ö¸Õë½ÓÊÕ¸½¼ÓĞÅÏ¢
+	//è®¾å®šä¸´æ—¶æŒ‡é’ˆæ¥æ”¶é™„åŠ ä¿¡æ¯
 	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
 	if (temp->cx < 960) {
 		temp->cx = 960;
-	}//Èç¹ûĞÂµÄ´°¿Ú¿í¶ÈĞ¡ÓÚ960£¨ÏñËØ£©£¬Éè¶¨Îª960
+	}//å¦‚æœæ–°çš„çª—å£å®½åº¦å°äº960ï¼ˆåƒç´ ï¼‰ï¼Œè®¾å®šä¸º960
 	if (temp->cy < 540) {
 		temp->cy = 540;
-	}//Èç¹ûĞÂµÄ´°¿Ú¸ß¶ÈĞ¡ÓÚ540£¨ÏñËØ£©£¬Éè¶¨Îª540
+	}//å¦‚æœæ–°çš„çª—å£é«˜åº¦å°äº540ï¼ˆåƒç´ ï¼‰ï¼Œè®¾å®šä¸º540
 	return 0;
 }
 
-//Í³Ò»×ÔÊÊÓ¦×Ó´°¿ÚÎ»ÖÃ/´óĞ¡ÓëÖ÷´°¿ÚÏàÆ¥Åä
+//ç»Ÿä¸€è‡ªé€‚åº”å­çª—å£ä½ç½®/å¤§å°ä¸ä¸»çª—å£ç›¸åŒ¹é…
 LRESULT MainWnd::WM_WINDOWPOSCHANGED_WndProc()
 {
-	//Éè¶¨ÁÙÊ±Ö¸Õë½ÓÊÕ¸½¼ÓĞÅÏ¢
+	//è®¾å®šä¸´æ—¶æŒ‡é’ˆæ¥æ”¶é™„åŠ ä¿¡æ¯
 	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
-	//´´½¨lParamÓÃÓÚÔÚÃ¶¾Ù×Ó´°¿ÚÊ±¸ø»Øµ÷º¯Êı´«²Î
-	LPARAM lParam = (LPARAM)this;//Ê¹lParam´æ´¢thisÖ¸Õë£¬´Ó¶øÖ®ºóÇ¿×ªÎª MyWnds * »ñÈ¡Êı¾İ
+	//åˆ›å»ºlParamç”¨äºåœ¨æšä¸¾å­çª—å£æ—¶ç»™å›è°ƒå‡½æ•°ä¼ å‚
+	LPARAM lParam = (LPARAM)this;//ä½¿lParamå­˜å‚¨thisæŒ‡é’ˆï¼Œä»è€Œä¹‹åå¼ºè½¬ä¸º MyWnds * è·å–æ•°æ®
 	EnumChildWindows(hwnd_WndProc, StaticEnumChildProc, lParam);
-	wndWidth = temp->cx;//¸üĞÂ´°¿Ú¿í¶È
-	wndHeight = temp->cy;//¸üĞÂ´°¿Ú¸ß¶È
+	wndWidth = temp->cx;//æ›´æ–°çª—å£å®½åº¦
+	wndHeight = temp->cy;//æ›´æ–°çª—å£é«˜åº¦
 	return 0;
 }
 
-//´´½¨Ö÷´°¿Ú
+//åˆ›å»ºä¸»çª—å£
 LRESULT MainWnd::WM_CREATE_WndProc() {
-	//´´½¨¹¤¾ßÀ¸
-	HWND toolBarHwnd = CreateWindowEx(0, TOOLBARCLASSNAME, _T("¹¤¾ßÀ¸"), WS_CHILD | TBSTYLE_TOOLTIPS | TBSTYLE_LIST,
+	//åˆ›å»ºå·¥å…·æ 
+	HWND toolBarHwnd = CreateWindowEx(0, TOOLBARCLASSNAME, _T("å·¥å…·æ "), WS_CHILD | TBSTYLE_TOOLTIPS | TBSTYLE_LIST,
 		0, 0, wndWidth, int(0.1 * wndHeight),
 		hwnd_WndProc, HMENU(toolBarID), hInstance, this);
-	if (!toolBarHwnd)ErrorMessageBox(hwnd_WndProc, _T("´´½¨¹¤¾ßÀ¸toolBarÊ§°Ü"));
-	//Éè¶¨À©Õ¹ÑùÊ½
+	if (!toolBarHwnd)ErrorMessageBox(hwnd_WndProc, _T("åˆ›å»ºå·¥å…·æ toolBarå¤±è´¥"));
+	//è®¾å®šæ‰©å±•æ ·å¼
 	SendMessage(toolBarHwnd, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS);
-	//´´½¨°´Å¥
+	//åˆ›å»ºæŒ‰é’®
 	TBBUTTON buttons[5] =
 	{
-		{I_IMAGENONE , buttonOpenID_ToolBar    ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("´ò¿ª")},//´ò¿ª
-		{I_IMAGENONE , buttonPreviewID_ToolBar ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("Ô¤ÀÀ")},//Ô¤ÀÀ
-		{I_IMAGENONE , buttonZipID_ToolBar     ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("Ñ¹Ëõ")},//Ñ¹Ëõ
-		{I_IMAGENONE , buttonUnpackID_ToolBar  ,TBSTATE_ENABLED,BTNS_DROPDOWN, {0},0,(INT_PTR)_T("½âÑ¹")},//½âÑ¹
-		{I_IMAGENONE , buttonSetID_ToolBar     ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("ÉèÖÃ")}//ÉèÖÃ
+		{I_IMAGENONE , buttonOpenID_ToolBar    ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("æ‰“å¼€")},//æ‰“å¼€
+		{I_IMAGENONE , buttonPreviewID_ToolBar ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("é¢„è§ˆ")},//é¢„è§ˆ
+		{I_IMAGENONE , buttonZipID_ToolBar     ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("å‹ç¼©")},//å‹ç¼©
+		{I_IMAGENONE , buttonUnpackID_ToolBar  ,TBSTATE_ENABLED,BTNS_DROPDOWN, {0},0,(INT_PTR)_T("è§£å‹")},//è§£å‹
+		{I_IMAGENONE , buttonSetID_ToolBar     ,TBSTATE_ENABLED,BTNS_BUTTON,   {0},0,(INT_PTR)_T("è®¾ç½®")}//è®¾ç½®
 	};
-	//Ìí¼Ó°´Å¥
+	//æ·»åŠ æŒ‰é’®
 	SendMessage(toolBarHwnd, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	SendMessage(toolBarHwnd, TB_ADDBUTTONS, sizeof(buttons) / sizeof(TBBUTTON), (LPARAM)buttons);
-	//Éè¶¨°´Å¥´óĞ¡
+	//è®¾å®šæŒ‰é’®å¤§å°
 	SendMessage(toolBarHwnd, TB_SETBUTTONSIZE, 0, MAKELPARAM(140, 70));
-	//×Ô¶¯µ÷Õû³ß´ç
+	//è‡ªåŠ¨è°ƒæ•´å°ºå¯¸
 	SendMessage(toolBarHwnd, TB_AUTOSIZE, 0, 0);
-	//ÏÔÊ¾¹¤¾ßÀ¸
+	//æ˜¾ç¤ºå·¥å…·æ 
 	ShowWindow(toolBarHwnd, SW_SHOWNORMAL);
 
-	//»ñÈ¡¹¤¾ßÀ¸³ß´ç
+	//è·å–å·¥å…·æ å°ºå¯¸
 	RECT rect,rc;
 	GetWindowRect(toolBarHwnd, &rect);
-	//½«×Ó´°¿Ú×ø±ê×ª»»ÎªÏà¶ÔÓÚ¸¸´°¿ÚµÄ×ø±ê
+	//å°†å­çª—å£åæ ‡è½¬æ¢ä¸ºç›¸å¯¹äºçˆ¶çª—å£çš„åæ ‡
 	POINT point = { rect.right,rect.bottom };
 	ScreenToClient(hwnd_WndProc, &point);
-	//»ñÈ¡Ö÷´°¿Ú¹¤×÷Çø³ß´ç
+	//è·å–ä¸»çª—å£å·¥ä½œåŒºå°ºå¯¸
 	GetClientRect(hwnd_WndProc, &rc);
-	//´´½¨ÎÄ¼şÁĞ±í
-	HWND fileListViewHwnd = CreateWindowEx(0, WC_LISTVIEW, _T("ÎÄ¼şÁĞ±í"), WS_CHILD| WS_BORDER| LVS_REPORT | LVS_SHOWSELALWAYS | WS_VISIBLE,
+	//åˆ›å»ºæ–‡ä»¶åˆ—è¡¨
+	HWND fileListViewHwnd = CreateWindowEx(0, WC_LISTVIEW, _T("æ–‡ä»¶åˆ—è¡¨"), WS_CHILD| WS_BORDER| LVS_REPORT | LVS_SHOWSELALWAYS | WS_VISIBLE,
 		0, point.y, point.x, rc.bottom-rc.top- point.y,
 		hwnd_WndProc, HMENU(fileListID), hInstance, this);
-	if (!fileListViewHwnd)ErrorMessageBox(hwnd_WndProc, _T("´´½¨ÎÄ¼şÁĞ±í¿òfileListViewÊ§°Ü"));
-	//ÉèÖÃÀ©Õ¹ÑùÊ½
+	if (!fileListViewHwnd)ErrorMessageBox(hwnd_WndProc, _T("åˆ›å»ºæ–‡ä»¶åˆ—è¡¨æ¡†fileListViewå¤±è´¥"));
+	//è®¾ç½®æ‰©å±•æ ·å¼
 	ListView_SetExtendedListViewStyle(fileListViewHwnd, LVS_EX_COLUMNSNAPPOINTS | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES| LVS_EX_DOUBLEBUFFER);
-	//²åÈëÁĞ
+	//æ’å…¥åˆ—
 	LVCOLUMN column = { 0 };
 	column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM | LVCF_MINWIDTH;
 	column.cx = 0.15 * point.x;
-	column.pszText = (LPTSTR)_T("Ãû³Æ");
+	column.pszText = (LPTSTR)_T("åç§°");
 	column.iSubItem = (int)FileListColumnID::columnNameID;
 	column.cxMin = 0.15 * point.x;
 	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnNameID, &column);
 
 	column.fmt = LVCFMT_CENTER;
 	column.cx = 0.15 * point.x;
-	column.pszText = (LPTSTR)_T("ÀàĞÍ");
+	column.pszText = (LPTSTR)_T("ç±»å‹");
 	column.iSubItem = (int)FileListColumnID::columnTypeID;
 	column.cxMin = 0.15 * point.x;
 	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnTypeID, &column);
@@ -376,32 +376,32 @@ LRESULT MainWnd::WM_CREATE_WndProc() {
 	return 0;
 }
 
-//¹Ø±Õ´°¿Ú
+//å…³é—­çª—å£
 LRESULT MainWnd::WM_CLOSE_WndProc() {
-	DestroyWindow(hwnd_WndProc);//Ïú»Ù´°¿Ú²¢·¢ËÍWM_DESTROYÏûÏ¢
+	DestroyWindow(hwnd_WndProc);//é”€æ¯çª—å£å¹¶å‘é€WM_DESTROYæ¶ˆæ¯
 	return 0;
 }
 
-//Ïú»Ù´°¿Ú
+//é”€æ¯çª—å£
 LRESULT MainWnd::WM_DESTROY_WndProc()
 {
-	PostQuitMessage(0);//·¢²¼WM_QUITÏûÏ¢
+	PostQuitMessage(0);//å‘å¸ƒWM_QUITæ¶ˆæ¯
 	return 0;
 }
 
-//Ã¶¾Ù×Ó´°¿Ú¹ı³Ì
+//æšä¸¾å­çª—å£è¿‡ç¨‹
 BOOL MainWnd::EnumChildProc(HWND hwndChild, LPARAM lParam)
 {
-	//×Ô¶¯µ÷ÕûÍ¬²½×Ó´°¿Ú´óĞ¡
+	//è‡ªåŠ¨è°ƒæ•´åŒæ­¥å­çª—å£å¤§å°
 	if(hwndChild == GetDlgItem(hwnd_WndProc, toolBarID)) SendMessage(hwndChild, TB_AUTOSIZE, 0, 0);
 	else if (hwndChild == GetDlgItem(hwnd_WndProc, fileListID)) {
-		//»ñÈ¡¹¤¾ßÀ¸³ß´ç
+		//è·å–å·¥å…·æ å°ºå¯¸
 		RECT rect, rc;
 		GetWindowRect(GetDlgItem(hwnd_WndProc, toolBarID), &rect);
-		//½«×Ó´°¿Ú×ø±ê×ª»»ÎªÏà¶ÔÓÚ¸¸´°¿ÚµÄ×ø±ê
+		//å°†å­çª—å£åæ ‡è½¬æ¢ä¸ºç›¸å¯¹äºçˆ¶çª—å£çš„åæ ‡
 		POINT point = { rect.right,rect.bottom };
 		ScreenToClient(hwnd_WndProc, &point);
-		//»ñÈ¡Ö÷´°¿Ú¹¤×÷Çø³ß´ç
+		//è·å–ä¸»çª—å£å·¥ä½œåŒºå°ºå¯¸
 		GetClientRect(hwnd_WndProc, &rc);
 		MoveWindow(hwndChild, 0, point.y, point.x, rc.bottom - rc.top - point.y, TRUE);
 	}

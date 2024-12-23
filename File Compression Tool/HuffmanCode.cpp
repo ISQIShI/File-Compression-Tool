@@ -1,17 +1,17 @@
-#include "FileService.h"
+ï»¿#include "FileService.h"
 #include"HuffmanCode.h"
 
 
 void HuffmanCode::GetSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency, const path& fileName, size_t fileOffset, size_t fileMapSize)
 {
 	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)fileName.c_str(), fileOffset, fileMapSize);
-	//½øĞĞÎÄ¼şÓ³Éä
+	//è¿›è¡Œæ–‡ä»¶æ˜ å°„
 	FileService::MapFileReader(*mapFileInfo);
-	//»ñÈ¡ÎÄ¼şÖ¸Õë
+	//è·å–æ–‡ä»¶æŒ‡é’ˆ
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
-	//ÎÄ¼şÖ¸ÕëÖğ×Ö½Ú±éÀúÕû¸öÓ³ÉäµÄÇøÓò
+	//æ–‡ä»¶æŒ‡é’ˆé€å­—èŠ‚éå†æ•´ä¸ªæ˜ å°„çš„åŒºåŸŸ
 	for (size_t x = 0; x < mapFileInfo->fileMapSize; x++) {
-		//×Ö½Ú¶ÔÓ¦µÄ·ûºÅÆµÂÊÔö¼Ó
+		//å­—èŠ‚å¯¹åº”çš„ç¬¦å·é¢‘ç‡å¢åŠ 
 		++symbolFrequency[filePointer[x]];
 	}
 	delete mapFileInfo;
@@ -26,12 +26,12 @@ void HuffmanCode::MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFreque
 
 HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& symbolFrequency, pair<uintmax_t, BYTE>* WPL_Size)
 {
-	//½«·ûºÅ-ÆµÂÊ±íµ¼ÈëÓÅÏÈ¶ÓÁĞ
+	//å°†ç¬¦å·-é¢‘ç‡è¡¨å¯¼å…¥ä¼˜å…ˆé˜Ÿåˆ—
 	priority_queue < HuffmanNode*, vector<HuffmanNode*>, HuffmanNodeCompare > frequencyQueue;
 	for (auto& [symbol, frequence] : symbolFrequency) {
 		frequencyQueue.push(new HuffmanNode(symbol, frequence));
 	}
-	//¹¹½¨¹ş·òÂüÊ÷
+	//æ„å»ºå“ˆå¤«æ›¼æ ‘
 	HuffmanNode* leftTree, * rightTree, * parentTree;
 	while (frequencyQueue.size() > 1) {
 		leftTree = frequencyQueue.top();
@@ -40,16 +40,16 @@ HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& sy
 		frequencyQueue.pop();
 		parentTree = new HuffmanNode(0, leftTree->frequency + rightTree->frequency, leftTree, rightTree);
 		frequencyQueue.push(parentTree);
-		//Èç¹û´«²Î£¬¼ÇÂ¼WPL
+		//å¦‚æœä¼ å‚ï¼Œè®°å½•WPL
 		if (WPL_Size) {
-			//Èç¹ûĞÂÔö¼Ó·ÇÒ¶×Ó½ÚµãµÄÈ¨ÖµĞ¡ÓÚµÈÓÚÌî³äµÄ±ÈÌØÊı£¬ÔòÓÃÓÚ"»¹Õ®"£¬×Ö½ÚÊı²»Ôö¼Ó
+			//å¦‚æœæ–°å¢åŠ éå¶å­èŠ‚ç‚¹çš„æƒå€¼å°äºç­‰äºå¡«å……çš„æ¯”ç‰¹æ•°ï¼Œåˆ™ç”¨äº"è¿˜å€º"ï¼Œå­—èŠ‚æ•°ä¸å¢åŠ 
 			if (parentTree->frequency <= WPL_Size->second) {
 				WPL_Size->second -= parentTree->frequency;
 				continue;
 			}
-			//Ôö¼Ó×Ö½Ú¼ÆÊı
+			//å¢åŠ å­—èŠ‚è®¡æ•°
 			WPL_Size->first += ((parentTree->frequency - WPL_Size->second) / 8) + 1;
-			//¸üĞÂ¼ÇÂ¼Ìî³äµÄ±ÈÌØÊı
+			//æ›´æ–°è®°å½•å¡«å……çš„æ¯”ç‰¹æ•°
 			WPL_Size->second = 8 - ((parentTree->frequency - WPL_Size->second) % 8);
 		}
 	}
@@ -61,18 +61,18 @@ HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& sy
 void HuffmanCode::DestroyHuffmanTree(HuffmanNode* rootNode)
 {
 	if (!rootNode)return;
-	//Ïú»Ù×ó×ÓÊ÷
+	//é”€æ¯å·¦å­æ ‘
 	DestroyHuffmanTree(rootNode->leftNode);
-	//Ïú»ÙÓÒ×ÓÊ÷
+	//é”€æ¯å³å­æ ‘
 	DestroyHuffmanTree(rootNode->rightNode);
-	//Ïú»Ù¸ù½Úµã
+	//é”€æ¯æ ¹èŠ‚ç‚¹
 	delete rootNode;
 }
 
 void HuffmanCode::EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,HuffmanNode* rootNode,string code, unordered_map<BYTE, string>* symbolCode)
 {
 	if (!rootNode)return;
-	//µ±rootNodeÎªÒ¶×Ó½ÚµãÊ±£¬½«·ûºÅ-±àÂë³¤¶È´æÈë·ûºÅ-±àÂë³¤¶È±í
+	//å½“rootNodeä¸ºå¶å­èŠ‚ç‚¹æ—¶ï¼Œå°†ç¬¦å·-ç¼–ç é•¿åº¦å­˜å…¥ç¬¦å·-ç¼–ç é•¿åº¦è¡¨
 	if (!rootNode->leftNode && !rootNode->rightNode) {
 		codeLength.emplace_back(rootNode->symbol, code.length());
 		if (symbolCode) {
@@ -80,34 +80,34 @@ void HuffmanCode::EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,Huffman
 		}
 		return;
 	}
-	//±éÀú×ó×ÓÊ÷
+	//éå†å·¦å­æ ‘
 	EncodeHuffmanTree(codeLength,rootNode->leftNode, code + "0");
-	//±éÀúÓÒ×ÓÊ÷
+	//éå†å³å­æ ‘
 	EncodeHuffmanTree(codeLength,rootNode->rightNode, code + "1");
 }
 
 
 void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vector<pair<BYTE, BYTE>>& codeLength, pair<uintmax_t, BYTE>& WPL_Size)
 {
-	//¿¼ÂÇµ½¿ÉÄÜµÄ¶àÏß³ÌÇé¿ö£¬²»Ö±½Ó²Ù×÷´«½øÀ´µÄÊµ²Î
+	//è€ƒè™‘åˆ°å¯èƒ½çš„å¤šçº¿ç¨‹æƒ…å†µï¼Œä¸ç›´æ¥æ“ä½œä¼ è¿›æ¥çš„å®å‚
 	pair<uintmax_t, BYTE> wpl_size = { 0,0 };
 	size_t temp;
 	for (auto& [symbol,clength]: codeLength) {
 		temp = symbolFrequency[symbol] * clength;
-		//Èç¹ûĞÂÔö¼ÓµÄÈ¨ÖµĞ¡ÓÚµÈÓÚÌî³äµÄ±ÈÌØÊı£¬ÔòÓÃÓÚ"»¹Õ®"£¬×Ö½ÚÊı²»Ôö¼Ó
+		//å¦‚æœæ–°å¢åŠ çš„æƒå€¼å°äºç­‰äºå¡«å……çš„æ¯”ç‰¹æ•°ï¼Œåˆ™ç”¨äº"è¿˜å€º"ï¼Œå­—èŠ‚æ•°ä¸å¢åŠ 
 		if (temp <= wpl_size.second) {
 			wpl_size.second -= temp;
 			continue;
 		}
-		//Ôö¼Ó×Ö½Ú¼ÆÊı
+		//å¢åŠ å­—èŠ‚è®¡æ•°
 		wpl_size.first += ((temp - wpl_size.second) / 8) + 1;
-		//¸üĞÂ¼ÇÂ¼Ìî³äµÄ±ÈÌØÊı
+		//æ›´æ–°è®°å½•å¡«å……çš„æ¯”ç‰¹æ•°
 		wpl_size.second = 8 - ((temp - wpl_size.second) % 8);
     }
-	//½«½á¹ûµş¼Óµ½Êµ²Îµ±ÖĞ
+	//å°†ç»“æœå åŠ åˆ°å®å‚å½“ä¸­
     WPL_Size.first += wpl_size.first;
     WPL_Size.second += wpl_size.second;
-	//ÈôÌî³ä±ÈÌØÊı³¬¹ı1×Ö½Ú
+	//è‹¥å¡«å……æ¯”ç‰¹æ•°è¶…è¿‡1å­—èŠ‚
 	if (WPL_Size.second >= 8) {
 		WPL_Size.first -= WPL_Size.second / 8;
         WPL_Size.second = WPL_Size.second % 8;
@@ -116,20 +116,20 @@ void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vect
 
 void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode)
 {
-	//ÏÈ¶Ô·ûºÅ-±àÂë³¤¶È±í½øĞĞÅÅĞò
+	//å…ˆå¯¹ç¬¦å·-ç¼–ç é•¿åº¦è¡¨è¿›è¡Œæ’åº
 	sort(codeLength.begin(), codeLength.end(), [](const pair<BYTE, BYTE>& x, const pair<BYTE, BYTE>& y) {
-		//±àÂë³¤¶ÈÔ½Ğ¡Ô½¿¿Ç°£¬±àÂë³¤¶ÈÏàÍ¬Ê±£¬·ûºÅÖµÔ½Ğ¡Ô½¿¿Ç°
+		//ç¼–ç é•¿åº¦è¶Šå°è¶Šé å‰ï¼Œç¼–ç é•¿åº¦ç›¸åŒæ—¶ï¼Œç¬¦å·å€¼è¶Šå°è¶Šé å‰
 		return (x.second < y.second) || ((x.second == y.second) && (x.first < y.first)); 
 		});
-	//´¦ÀíÖ»ÓĞÒ»¸ö·ûºÅÊ±£¬±àÂë³¤¶ÈÎª0µÄÇé¿ö
+	//å¤„ç†åªæœ‰ä¸€ä¸ªç¬¦å·æ—¶ï¼Œç¼–ç é•¿åº¦ä¸º0çš„æƒ…å†µ
 	if (codeLength.size() == 1 && codeLength[0].second == 0) { codeLength[0].second = 1; }
-	//ÉÏÒ»¸ö½øĞĞ±àÂëµÄ·ûºÅµÄ±àÂë³¤¶È
+	//ä¸Šä¸€ä¸ªè¿›è¡Œç¼–ç çš„ç¬¦å·çš„ç¼–ç é•¿åº¦
 	BYTE lastLength = codeLength[0].second;
-	//ÉÏÒ»¸ö·ûºÅµÄ±àÂë
+	//ä¸Šä¸€ä¸ªç¬¦å·çš„ç¼–ç 
 	string lastCode(lastLength,'0');
 	symbolCode[codeLength[0].first] = lastCode;
 	for (size_t i = 1; i < codeLength.size();++i) {
-		//ÔÚÇ°Ò»¸ö±àÂëµÄ»ù´¡ÉÏ¼Ó1
+		//åœ¨å‰ä¸€ä¸ªç¼–ç çš„åŸºç¡€ä¸ŠåŠ 1
 		for (size_t x = lastLength - 1; x >= 0; --x) {
 			if (lastCode[x] == '0') {
 				lastCode[x] = '1';
@@ -137,7 +137,7 @@ void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unor
 			}
 			lastCode[x] = '0';
 		}
-		//±àÂë³¤¶È±ÈÇ°Ò»¸öµÄ´ók£¬¼Ó1Ö®ºó×óÒÆkÎ»(¼´×·¼Ók¸ö0)
+		//ç¼–ç é•¿åº¦æ¯”å‰ä¸€ä¸ªçš„å¤§kï¼ŒåŠ 1ä¹‹åå·¦ç§»kä½(å³è¿½åŠ kä¸ª0)
 		if (codeLength[i].second > lastLength) {
 			lastCode.append(codeLength[i].second - lastLength, '0');
 		}

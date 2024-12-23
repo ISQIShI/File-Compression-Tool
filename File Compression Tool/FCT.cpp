@@ -1,8 +1,8 @@
-#include"MainWnd.h"
+ï»¿#include"MainWnd.h"
 
-//³ÌĞòÈë¿Úº¯Êı
+//ç¨‹åºå…¥å£å‡½æ•°
 int WINAPI _tWinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE hPreInstance, _In_ LPTSTR lpCmdLine, _In_ INT nShowCmd) {
-	//½ÓÊÕÓ¦ÓÃ³ÌĞòµÄµ±Ç°ÊµÀıµÄ¾ä±ú
+	//æ¥æ”¶åº”ç”¨ç¨‹åºçš„å½“å‰å®ä¾‹çš„å¥æŸ„
 	MyWnds::SethInstance(_hInstance);
 	MyWnds& a = MainWnd::GetMainWnd();
 	a.Wnd(true);

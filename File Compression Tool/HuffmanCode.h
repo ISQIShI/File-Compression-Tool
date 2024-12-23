@@ -1,60 +1,60 @@
-#pragma once
+ï»¿#pragma once
 #include<unordered_map>
 #include<queue>
 
 
 class HuffmanNode {
 public:
-	BYTE symbol;//·ûºÅ
-	size_t frequency;//ÆµÂÊ
-	HuffmanNode* leftNode;//×ó½Úµã
-	HuffmanNode* rightNode;//ÓÒ½Úµã
+	BYTE symbol;//ç¬¦å·
+	size_t frequency;//é¢‘ç‡
+	HuffmanNode* leftNode;//å·¦èŠ‚ç‚¹
+	HuffmanNode* rightNode;//å³èŠ‚ç‚¹
 	HuffmanNode(BYTE s, size_t f, HuffmanNode* left = nullptr, HuffmanNode* right = nullptr) :symbol(s), frequency(f), leftNode(left), rightNode(right) {}
 };
 
-//ÓÃÓÚÓÅÏÈ¶ÓÁĞÖĞ¹ş·òÂü½Úµã±È½ÏµÄ·Âº¯Êı
+//ç”¨äºä¼˜å…ˆé˜Ÿåˆ—ä¸­å“ˆå¤«æ›¼èŠ‚ç‚¹æ¯”è¾ƒçš„ä»¿å‡½æ•°
 struct HuffmanNodeCompare {
 	bool operator()(const HuffmanNode* x, const HuffmanNode* y) const
     {
-		//ÆµÂÊÔ½Ğ¡ÓÅÏÈ¼¶Ô½¸ß£¬ÆµÂÊÏàÍ¬Ê±£¬·ûºÅÖµÔ½Ğ¡ÓÅÏÈ¼¶Ô½¸ß
+		//é¢‘ç‡è¶Šå°ä¼˜å…ˆçº§è¶Šé«˜ï¼Œé¢‘ç‡ç›¸åŒæ—¶ï¼Œç¬¦å·å€¼è¶Šå°ä¼˜å…ˆçº§è¶Šé«˜
 		return (x->frequency > y->frequency) || ((x->frequency == y->frequency) && (x->symbol > y->symbol)); 
     }
 };
 
 class HuffmanCode {
 public:
-	/*--------¸÷ÖØÒª²ÎÊı½âÊÍ----[out]´ú±í×÷ÎªÊä³ö²ÎÊı [in]´ú±í×÷ÎªÊäÈë²ÎÊı [optional]´ú±í×÷Îª¿ÉÑ¡²ÎÊı------
-	·ûºÅ-ÆµÂÊ±í,ÓÃÓÚ´æ´¢ÎÄ¼şÖĞ¸÷¸ö·ûºÅ³öÏÖµÄÆµÂÊ
+	/*--------å„é‡è¦å‚æ•°è§£é‡Š----[out]ä»£è¡¨ä½œä¸ºè¾“å‡ºå‚æ•° [in]ä»£è¡¨ä½œä¸ºè¾“å…¥å‚æ•° [optional]ä»£è¡¨ä½œä¸ºå¯é€‰å‚æ•°------
+	ç¬¦å·-é¢‘ç‡è¡¨,ç”¨äºå­˜å‚¨æ–‡ä»¶ä¸­å„ä¸ªç¬¦å·å‡ºç°çš„é¢‘ç‡
 	unordered_map<BYTE, size_t> symbolFrequency; 
 	[out]GetSymbolFrequency [in]BuildHuffmanTree 
 
-	·ûºÅ-±àÂë±í,ÓÃÓÚ´æ´¢¸÷·ûºÅ¶ÔÓ¦µÄ±àÂë
+	ç¬¦å·-ç¼–ç è¡¨,ç”¨äºå­˜å‚¨å„ç¬¦å·å¯¹åº”çš„ç¼–ç 
 	unordered_map<BYTE, string> symbolCode;
 	[out]GetNormalSymbolCode [out,optional]EncodeHuffmanTree 
 
-	·ûºÅ-±àÂë³¤¶È±í
+	ç¬¦å·-ç¼–ç é•¿åº¦è¡¨
 	vector<pair<BYTE,BYTE>> codeLength;
-	//priority_queue<pair<BYTE,BYTE>,vector<pair<BYTE, BYTE>>, CodeLengthCompare> codeLength;//ÒÑ¾­ÆúÓÃ
+	//priority_queue<pair<BYTE,BYTE>,vector<pair<BYTE, BYTE>>, CodeLengthCompare> codeLength;//å·²ç»å¼ƒç”¨
 	[out]EncodeHuffmanTree [in]GetNormalSymbolCode GetWPL
 
-	Ò»¿Å¹ş·òÂüÊ÷µÄ´øÈ¨Â·¾¶³¤¶ÈWPL,¼´Ê¹ÓÃ¸ÃÊ÷½øĞĞ±àÂëÑ¹ËõºóÊı¾İµÄ×Ü³¤¶È,first²ÎÊıÎª×Ö½ÚÊı£¬second²ÎÊıÎª²»×ã1×Ö½ÚÌî³äµÄ±ÈÌØÊı
-	Èç¹ûÊ¹ÓÃ·Ö¿é´¦Àí£¬¿ÉÓÃÓÚ¼ÆËã¿éµÄ´óĞ¡
+	ä¸€é¢—å“ˆå¤«æ›¼æ ‘çš„å¸¦æƒè·¯å¾„é•¿åº¦WPL,å³ä½¿ç”¨è¯¥æ ‘è¿›è¡Œç¼–ç å‹ç¼©åæ•°æ®çš„æ€»é•¿åº¦,firstå‚æ•°ä¸ºå­—èŠ‚æ•°ï¼Œsecondå‚æ•°ä¸ºä¸è¶³1å­—èŠ‚å¡«å……çš„æ¯”ç‰¹æ•°
+	å¦‚æœä½¿ç”¨åˆ†å—å¤„ç†ï¼Œå¯ç”¨äºè®¡ç®—å—çš„å¤§å°
 	pair<uintmax_t, BYTE>* WPL_Size
 	*/
 	
-	//»ñÈ¡ÎÄ¼şÄ³ÇøÓòÖĞ ·ûºÅ-ÆµÂÊ±í (ºóÁ½¸ö²ÎÊıÓÃÓÚ¿ØÖÆÎÄ¼ş¶ÁÈ¡·¶Î§,¿ÉÒÔÊµÏÖ´óÎÄ¼ş·Ö¿é¶ÁÈ¡)
+	//è·å–æ–‡ä»¶æŸåŒºåŸŸä¸­ ç¬¦å·-é¢‘ç‡è¡¨ (åä¸¤ä¸ªå‚æ•°ç”¨äºæ§åˆ¶æ–‡ä»¶è¯»å–èŒƒå›´,å¯ä»¥å®ç°å¤§æ–‡ä»¶åˆ†å—è¯»å–)
 	static void GetSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency, const path& fileName, size_t fileOffset = 0, size_t fileMapSize = 0);
-	//ºÏ²¢Á½¸ö ·ûºÅ-ÆµÂÊ±í (±í2ºÏ²¢µ½±í1)
+	//åˆå¹¶ä¸¤ä¸ª ç¬¦å·-é¢‘ç‡è¡¨ (è¡¨2åˆå¹¶åˆ°è¡¨1)
 	static void MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency1, unordered_map<BYTE, size_t>& symbolFrequency2);
-	//¸ù¾İ ·ûºÅ-ÆµÂÊ±í ¹¹½¨Ò»¿Å¹ş·òÂüÊ÷²¢·µ»Ø¸ù½ÚµãÖ¸Õë Êä³öWPL(¼´¸ù¾İ´«ÈëµÄ·ûºÅ-ÆµÂÊ±í½øĞĞÑ¹ËõºóÊı¾İµÄ×Ü³¤¶È)(¿ÉÑ¡)
+	//æ ¹æ® ç¬¦å·-é¢‘ç‡è¡¨ æ„å»ºä¸€é¢—å“ˆå¤«æ›¼æ ‘å¹¶è¿”å›æ ¹èŠ‚ç‚¹æŒ‡é’ˆ è¾“å‡ºWPL(å³æ ¹æ®ä¼ å…¥çš„ç¬¦å·-é¢‘ç‡è¡¨è¿›è¡Œå‹ç¼©åæ•°æ®çš„æ€»é•¿åº¦)(å¯é€‰)
 	static HuffmanNode* BuildHuffmanTree(const unordered_map<BYTE, size_t>& symbolFrequency,pair<uintmax_t, BYTE>* WPL_Size = nullptr);
-	//µİ¹éÏú»ÙÒ»¿Å¹ş·òÂüÊ÷
+	//é€’å½’é”€æ¯ä¸€é¢—å“ˆå¤«æ›¼æ ‘
     static void DestroyHuffmanTree(HuffmanNode* rootNode);
-	//µİ¹é±éÀú¹ş·òÂüÊ÷,¿ÉÒÔ¸ù¾İÒ»¿ÅÒÑ¾­´æÔÚµÄ¹ş·òÂüÊ÷µÃµ½ ·ûºÅ-±àÂë³¤¶È±í ºÍ ·ûºÅ-±àÂë±í(¿ÉÑ¡)
+	//é€’å½’éå†å“ˆå¤«æ›¼æ ‘,å¯ä»¥æ ¹æ®ä¸€é¢—å·²ç»å­˜åœ¨çš„å“ˆå¤«æ›¼æ ‘å¾—åˆ° ç¬¦å·-ç¼–ç é•¿åº¦è¡¨ å’Œ ç¬¦å·-ç¼–ç è¡¨(å¯é€‰)
     static void EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,HuffmanNode* rootNode,string code = "", unordered_map<BYTE, string>* symbolCode = nullptr);
-	//¸ù¾İ ·ûºÅ-ÆµÂÊ±í ºÍ ·ûºÅ-±àÂë³¤¶È±í ÇóµÃWPL¼´Ñ¹ËõÊı¾İ×Ü´óĞ¡
+	//æ ¹æ® ç¬¦å·-é¢‘ç‡è¡¨ å’Œ ç¬¦å·-ç¼–ç é•¿åº¦è¡¨ æ±‚å¾—WPLå³å‹ç¼©æ•°æ®æ€»å¤§å°
 	static void GetWPL( unordered_map<BYTE, size_t>& symbolFrequency,const vector<pair<BYTE, BYTE>>& codeLength, pair<uintmax_t, BYTE>& WPL_Size);
-	//¸ù¾İ ·ûºÅ-±àÂë³¤¶È±í ¹¹½¨ ·ûºÅ-·¶Ê½±àÂë±í
+	//æ ¹æ® ç¬¦å·-ç¼–ç é•¿åº¦è¡¨ æ„å»º ç¬¦å·-èŒƒå¼ç¼–ç è¡¨
 	static void GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode);
 
 };

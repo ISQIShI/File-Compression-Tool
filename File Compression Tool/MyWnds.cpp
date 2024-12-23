@@ -1,22 +1,22 @@
-#include"MyWnds.h"
+ï»¿#include"MyWnds.h"
 
 HINSTANCE MyWnds::hInstance;
 int MyWnds::maxScreenWidth = GetSystemMetrics(SM_CXMAXIMIZED);
 int MyWnds::maxScreenHeight = GetSystemMetrics(SM_CYMAXIMIZED);
 
 void MyWnds::ErrorMessageBox(const HWND& hwnd,const TCHAR* msg,bool showErrorCode){
-	//´´½¨×Ö·û´®ÓÃÓÚ½ÓÊÕ´íÎó´úÂë
+	//åˆ›å»ºå­—ç¬¦ä¸²ç”¨äºæ¥æ”¶é”™è¯¯ä»£ç 
 	TCHAR errorCode[20] = _T("");
-	if (showErrorCode) _stprintf_s(errorCode, _T("\n´íÎó´úÂë:%lu"), GetLastError());
-	//½«msgÄÚÈİÓë´íÎó´úÂëÆ´½ÓÆğÀ´
+	if (showErrorCode) _stprintf_s(errorCode, _T("\né”™è¯¯ä»£ç :%lu"), GetLastError());
+	//å°†msgå†…å®¹ä¸é”™è¯¯ä»£ç æ‹¼æ¥èµ·æ¥
 	size_t length = _tcslen(msg) + _tcslen(errorCode) + 1;
 	TCHAR* finalMsg = new TCHAR[length];
 	_stprintf_s(finalMsg, length ,_T("%s%s"), msg, errorCode);
-	//µ¯³ö´íÎóµ¯´°
-	MessageBox(hwnd, finalMsg, _T("´íÎóĞÅÏ¢"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
-	//Ïú»ÙÊ¹ÓÃnew¿ª±ÙµÄ¿Õ¼ä
+	//å¼¹å‡ºé”™è¯¯å¼¹çª—
+	MessageBox(hwnd, finalMsg, _T("é”™è¯¯ä¿¡æ¯"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
+	//é”€æ¯ä½¿ç”¨newå¼€è¾Ÿçš„ç©ºé—´
 	delete[]finalMsg;
-	//ÍË³ö³ÌĞò
+	//é€€å‡ºç¨‹åº
 	exit(GetLastError());
 }
 
@@ -25,23 +25,23 @@ void MyWnds::TestMessageBox(const HWND& hwnd, const TCHAR* text, const TCHAR* ti
 }
 
 WPARAM MyWnds::MessageLoop(const HWND& hwnd_IsDialogMessage){
-	//½ûÓÃ¸¸´°¿Ú
+	//ç¦ç”¨çˆ¶çª—å£
 	if(isModalDialog)EnableWindow(isModalDialog, FALSE);
 	MSG Msg = { 0 };
 	BOOL bRet = 1;
 	while ((bRet = GetMessage(&Msg, NULL, 0, 0)) != 0) {
-		if (bRet == -1) ErrorMessageBox(NULL, _T("ÏûÏ¢¼ìË÷Ê§°Ü"));
+		if (bRet == -1) ErrorMessageBox(NULL, _T("æ¶ˆæ¯æ£€ç´¢å¤±è´¥"));
 		else
 		{
-			if (!IsDialogMessage(hwnd_IsDialogMessage, &Msg)) //¸Ãº¯Êı´¦Àí¼üÅÌÏûÏ¢(ÈçTABÇĞ»»¿Ø¼ş½¹µã)
+			if (!IsDialogMessage(hwnd_IsDialogMessage, &Msg)) //è¯¥å‡½æ•°å¤„ç†é”®ç›˜æ¶ˆæ¯(å¦‚TABåˆ‡æ¢æ§ä»¶ç„¦ç‚¹)
 			{
-				//×ª»»²¢·Ö·¢ÏûÏ¢
+				//è½¬æ¢å¹¶åˆ†å‘æ¶ˆæ¯
 				TranslateMessage(&Msg);
 				DispatchMessage(&Msg);
 			}
 		}
 	}
-	//ÆôÓÃ²¢»Ö¸´¾Û½¹µ½¸¸´°¿Ú
+	//å¯ç”¨å¹¶æ¢å¤èšç„¦åˆ°çˆ¶çª—å£
 	if (isModalDialog) {
 		EnableWindow(isModalDialog, TRUE);
 		SetFocus(isModalDialog);
@@ -50,22 +50,22 @@ WPARAM MyWnds::MessageLoop(const HWND& hwnd_IsDialogMessage){
 }
 
 LRESULT CALLBACK MyWnds::StaticWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-	//´´½¨¸¸Àà(MyWnds)Ö¸Õë²¢ÖÃ¿Õ£¬ÓÃÓÚÖ®ºóÖ¸Ïò×ÓÀà(¼Ì³Ğ×ÔMyWndsµÄÀà)¶ÔÏó
+	//åˆ›å»ºçˆ¶ç±»(MyWnds)æŒ‡é’ˆå¹¶ç½®ç©ºï¼Œç”¨äºä¹‹åæŒ‡å‘å­ç±»(ç»§æ‰¿è‡ªMyWndsçš„ç±»)å¯¹è±¡
 	MyWnds* myWnds = nullptr;
 	if (uMsg == WM_NCCREATE){
-		//ÊÕµ½ WM_NCCREATE ÏûÏ¢Ê±£¬lParam ÊÇÖ¸Ïò CREATESTRUCT ½á¹¹µÄÖ¸Õë£¬¸Ã½á¹¹°üº¬ÓĞ¹ØËù´´½¨µÄ´°¿ÚµÄĞÅÏ¢¡£
+		//æ”¶åˆ° WM_NCCREATE æ¶ˆæ¯æ—¶ï¼ŒlParam æ˜¯æŒ‡å‘ CREATESTRUCT ç»“æ„çš„æŒ‡é’ˆï¼Œè¯¥ç»“æ„åŒ…å«æœ‰å…³æ‰€åˆ›å»ºçš„çª—å£çš„ä¿¡æ¯ã€‚
 		CREATESTRUCT* temp = (CREATESTRUCT*)lParam;
 		/*
-		CREATESTRUCT ½á¹¹ÖĞµÄ lpCreateParams ³ÉÔ±±äÁ¿´æ´¢µÄÊÇµ÷ÓÃ CreateWindowEx ´´½¨´°¿ÚÊ±´«ÈëµÄ lpParam ²ÎÊıÖµ
-		ÎÒ´«ÈëµÄÊÇ×ÓÀà(¼Ì³Ğ×ÔMyWndsµÄÀà)¶ÔÏóµ÷ÓÃÆÕÍ¨³ÉÔ±º¯Êı CreateWnd Ê±Òşº¬µÄ this Ö¸Õë
-		Òò¶øËüÊµ¼ÊÊÇÖ¸Ïò´´½¨´°¿ÚµÄ×ÓÀà(¼Ì³Ğ×ÔMyWndsµÄÀà)¶ÔÏóµÄÖ¸Õë£¬¿ÉÒÔ±»Ç¿×ªÎª¸¸Àà(MyWnds)Ö¸Õë²¢±»¸¸Àà(MyWnds)Ö¸Õë½ÓÊÕ
+		CREATESTRUCT ç»“æ„ä¸­çš„ lpCreateParams æˆå‘˜å˜é‡å­˜å‚¨çš„æ˜¯è°ƒç”¨ CreateWindowEx åˆ›å»ºçª—å£æ—¶ä¼ å…¥çš„ lpParam å‚æ•°å€¼
+		æˆ‘ä¼ å…¥çš„æ˜¯å­ç±»(ç»§æ‰¿è‡ªMyWndsçš„ç±»)å¯¹è±¡è°ƒç”¨æ™®é€šæˆå‘˜å‡½æ•° CreateWnd æ—¶éšå«çš„ this æŒ‡é’ˆ
+		å› è€Œå®ƒå®é™…æ˜¯æŒ‡å‘åˆ›å»ºçª—å£çš„å­ç±»(ç»§æ‰¿è‡ªMyWndsçš„ç±»)å¯¹è±¡çš„æŒ‡é’ˆï¼Œå¯ä»¥è¢«å¼ºè½¬ä¸ºçˆ¶ç±»(MyWnds)æŒ‡é’ˆå¹¶è¢«çˆ¶ç±»(MyWnds)æŒ‡é’ˆæ¥æ”¶
 		*/
 		myWnds = (MyWnds*)temp->lpCreateParams;
-		//¹¹½¨×ÓÀà¶ÔÏóÖ¸ÕëÓë´°¿Ú¾ä±úÖ®¼äµÄ°ó¶¨¹ØÏµ
+		//æ„å»ºå­ç±»å¯¹è±¡æŒ‡é’ˆä¸çª—å£å¥æŸ„ä¹‹é—´çš„ç»‘å®šå…³ç³»
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)myWnds);
 	}
 	else{
-		//Í¨¹ı´°¿Ú¾ä±ú²éÕÒµ½´´½¨¸Ã´°¿ÚµÄ×ÓÀà(¼Ì³Ğ×ÔMyWndsµÄÀà)¶ÔÏóµÄÖ¸Õë£¬²¢ÓÃ¸¸Àà(MyWnds)Ö¸ÕëÖ¸Ïò×ÓÀà(¼Ì³Ğ×ÔMyWndsµÄÀà)¶ÔÏó
+		//é€šè¿‡çª—å£å¥æŸ„æŸ¥æ‰¾åˆ°åˆ›å»ºè¯¥çª—å£çš„å­ç±»(ç»§æ‰¿è‡ªMyWndsçš„ç±»)å¯¹è±¡çš„æŒ‡é’ˆï¼Œå¹¶ç”¨çˆ¶ç±»(MyWnds)æŒ‡é’ˆæŒ‡å‘å­ç±»(ç»§æ‰¿è‡ªMyWndsçš„ç±»)å¯¹è±¡
 		myWnds = (MyWnds*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	}
 
@@ -87,34 +87,34 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return WM_COMMAND_WndProc();
 	case WM_NOTIFY:
 		return WM_NOTIFY_WndProc();
-	case WM_CTLCOLORSTATIC://»æÖÆstaticºÍedit(ES_READONLY)¿Ø¼ş
+	case WM_CTLCOLORSTATIC://ç»˜åˆ¶staticå’Œedit(ES_READONLY)æ§ä»¶
 		return WM_CTLCOLORSTATIC_WndProc();
-	case WM_PAINT://»æÖÆ´°¿Ú¸üĞÂÇøÓò
+	case WM_PAINT://ç»˜åˆ¶çª—å£æ›´æ–°åŒºåŸŸ
 		return WM_PAINT_WndProc();
-	case WM_LBUTTONDOWN://°´ÏÂÊó±ê×ó¼ü
+	case WM_LBUTTONDOWN://æŒ‰ä¸‹é¼ æ ‡å·¦é”®
 		return WM_LBUTTONDOWN_WndProc();
-	case WM_LBUTTONUP://ËÉ¿ªÊó±ê×ó¼ü
+	case WM_LBUTTONUP://æ¾å¼€é¼ æ ‡å·¦é”®
 		return WM_LBUTTONUP_WndProc();
-	case WM_WINDOWPOSCHANGING://ÕıÔÚ¸ü¸Ä´°¿Ú´óĞ¡
+	case WM_WINDOWPOSCHANGING://æ­£åœ¨æ›´æ”¹çª—å£å¤§å°
 		return WM_WINDOWPOSCHANGING_WndProc();
-	case WM_WINDOWPOSCHANGED://´°¿Ú´óĞ¡Íê³É¸ü¸Ä
+	case WM_WINDOWPOSCHANGED://çª—å£å¤§å°å®Œæˆæ›´æ”¹
 		return WM_WINDOWPOSCHANGED_WndProc();
 	case WM_SIZE:
 		return WM_SIZE_WndProc();
 	case WM_CREATE:
 		return WM_CREATE_WndProc();
-	case WM_CLOSE://¹Ø±Õ´°¿Ú
+	case WM_CLOSE://å…³é—­çª—å£
 		return WM_CLOSE_WndProc();
-	case WM_DESTROY://Ïú»Ù´°¿Ú
+	case WM_DESTROY://é”€æ¯çª—å£
 	{
-		//Ïú»ÙÁÙÊ±¶ÔÏó
+		//é”€æ¯ä¸´æ—¶å¯¹è±¡
 		for (HGDIOBJ & x : tempObject) { 
 			if (x != NULL){
 				DeleteObject(x);
 				x = NULL;
 			}
 		}
-		//Ïú»Ù³¤ÆÚ¶ÔÏó
+		//é”€æ¯é•¿æœŸå¯¹è±¡
 		for (HGDIOBJ & x : lTSObject)
 		{
 			if (x != NULL) {
@@ -124,12 +124,12 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		}
 		return WM_DESTROY_WndProc();
 	}
-	default://Î´×Ô¶¨ÒåµÄÆäËûÏûÏ¢
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);//µ÷ÓÃÄ¬ÈÏ´°¿Ú¹ı³Ìº¯Êı
+	default://æœªè‡ªå®šä¹‰çš„å…¶ä»–æ¶ˆæ¯
+		return DefWindowProc(hwnd, uMsg, wParam, lParam);//è°ƒç”¨é»˜è®¤çª—å£è¿‡ç¨‹å‡½æ•°
 	}
 }
 
-//´¦Àí´°¿ÚÏûÏ¢µÄº¯Êı
+//å¤„ç†çª—å£æ¶ˆæ¯çš„å‡½æ•°
 LRESULT MyWnds::WM_COMMAND_WndProc()
 {
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
@@ -162,10 +162,10 @@ LRESULT MyWnds::WM_WINDOWPOSCHANGING_WndProc() {
 }
 
 LRESULT MyWnds::WM_WINDOWPOSCHANGED_WndProc() {
-	//Éè¶¨ÁÙÊ±Ö¸Õë½ÓÊÕ¸½¼ÓĞÅÏ¢
+	//è®¾å®šä¸´æ—¶æŒ‡é’ˆæ¥æ”¶é™„åŠ ä¿¡æ¯
 	WINDOWPOS* temp = (WINDOWPOS*)lParam_WndProc;
-	wndWidth = temp->cx;//¸üĞÂ´°¿Ú¿í¶È
-	wndHeight = temp->cy;//¸üĞÂ´°¿Ú¸ß¶È
+	wndWidth = temp->cx;//æ›´æ–°çª—å£å®½åº¦
+	wndHeight = temp->cy;//æ›´æ–°çª—å£é«˜åº¦
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 
@@ -199,20 +199,20 @@ BOOL CALLBACK MyWnds::EnumChildProc(HWND hwndChild, LPARAM lParam)
 
 
 WPARAM MyWnds::Wnd(bool needMessageLoop){
-	//Ê×ÏÈÖ±½Ó´´½¨´°¿Ú£¬·ÀÖ¹ÊÇÒòÎªÖ®Ç°Ïú»Ù´°¿ÚÖØĞÂ´´½¨´Ó¶øµ¼ÖÂÖØ¸´×¢²á´°¿ÚÀà±¨´í
+	//é¦–å…ˆç›´æ¥åˆ›å»ºçª—å£ï¼Œé˜²æ­¢æ˜¯å› ä¸ºä¹‹å‰é”€æ¯çª—å£é‡æ–°åˆ›å»ºä»è€Œå¯¼è‡´é‡å¤æ³¨å†Œçª—å£ç±»æŠ¥é”™
 	HWND hwnd = CreateWnd();
 	if (!hwnd) {
-		//´°¿Ú´´½¨Ê§°ÜÇÒ´íÎó´úÂëÎª1407(´°¿ÚÀà²»´æÔÚ)Ê±×¢²á´°¿ÚÀàÔÙ´Î´´½¨´°¿Ú
+		//çª—å£åˆ›å»ºå¤±è´¥ä¸”é”™è¯¯ä»£ç ä¸º1407(çª—å£ç±»ä¸å­˜åœ¨)æ—¶æ³¨å†Œçª—å£ç±»å†æ¬¡åˆ›å»ºçª—å£
 		if (GetLastError() == 1407) {
-			//×¢²á´°¿ÚÀà
-			if (!RegisterWndClass()) ErrorMessageBox(NULL, _T("×¢²á´°¿ÚÀàÊ§°Ü"));
-			//´´½¨´°¿Ú
+			//æ³¨å†Œçª—å£ç±»
+			if (!RegisterWndClass()) ErrorMessageBox(NULL, _T("æ³¨å†Œçª—å£ç±»å¤±è´¥"));
+			//åˆ›å»ºçª—å£
 			hwnd = CreateWnd();
-			if (!hwnd)ErrorMessageBox(NULL, _T("´´½¨´°¿ÚÊ§°Ü"));
+			if (!hwnd)ErrorMessageBox(NULL, _T("åˆ›å»ºçª—å£å¤±è´¥"));
 		}
-		else ErrorMessageBox(NULL, _T("´´½¨´°¿ÚÊ§°Ü"));
+		else ErrorMessageBox(NULL, _T("åˆ›å»ºçª—å£å¤±è´¥"));
 	}
-	//¹¹½¨ÏûÏ¢Ñ­»·
+	//æ„å»ºæ¶ˆæ¯å¾ªç¯
 	if (needMessageLoop)return MessageLoop(hwnd);
 	else return 0;
 }

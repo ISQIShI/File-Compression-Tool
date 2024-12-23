@@ -1,40 +1,40 @@
-#include"FileService.h"
+ï»¿#include"FileService.h"
 
 void FileService::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode)
 {
-	//´´½¨×Ö·û´®ÓÃÓÚ½ÓÊÕ´íÎó´úÂë
+	//åˆ›å»ºå­—ç¬¦ä¸²ç”¨äºæ¥æ”¶é”™è¯¯ä»£ç 
 	TCHAR errorCode[20] = _T("");
-	if (showErrorCode) _stprintf_s(errorCode, _T("\n´íÎó´úÂë:%lu"), GetLastError());
-	//½«msgÄÚÈİÓë´íÎó´úÂëÆ´½ÓÆğÀ´
+	if (showErrorCode) _stprintf_s(errorCode, _T("\né”™è¯¯ä»£ç :%lu"), GetLastError());
+	//å°†msgå†…å®¹ä¸é”™è¯¯ä»£ç æ‹¼æ¥èµ·æ¥
 	size_t length = _tcslen(msg) + _tcslen(errorCode) + 1;
 	TCHAR* finalMsg = new TCHAR[length];
 	_stprintf_s(finalMsg, length, _T("%s%s"), msg, errorCode);
-	//µ¯³ö´íÎóµ¯´°
-	MessageBox(hwnd, finalMsg, _T("´íÎóĞÅÏ¢"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
-	//Ïú»ÙÊ¹ÓÃnew¿ª±ÙµÄ¿Õ¼ä
+	//å¼¹å‡ºé”™è¯¯å¼¹çª—
+	MessageBox(hwnd, finalMsg, _T("é”™è¯¯ä¿¡æ¯"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
+	//é”€æ¯ä½¿ç”¨newå¼€è¾Ÿçš„ç©ºé—´
 	delete[]finalMsg;
-	//ÍË³ö³ÌĞò
+	//é€€å‡ºç¨‹åº
 	exit(GetLastError());
 }
 
 void FileService::MapFileReader(MapFileInfo& mapFileInfo)
 {
-	//Ê¹ÓÃÄÚ´æÓ³Éä·½Ê½¶ÁÈ¡ÎÄ¼ş£¬Ìá¸ßÎÄ¼ş¶ÁÈ¡ËÙ¶È
-	//´ò¿ªÎÄ¼şÒÔ»ñÈ¡¾ä±ú
+	//ä½¿ç”¨å†…å­˜æ˜ å°„æ–¹å¼è¯»å–æ–‡ä»¶ï¼Œæé«˜æ–‡ä»¶è¯»å–é€Ÿåº¦
+	//æ‰“å¼€æ–‡ä»¶ä»¥è·å–å¥æŸ„
 	mapFileInfo.fileHandle = CreateFile(mapFileInfo.fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (mapFileInfo.fileHandle == INVALID_HANDLE_VALUE)ErrorMessageBox(NULL,_T("ÎŞ·¨´ò¿ªÎÄ¼ş"));
-	//´´½¨ÎÄ¼şÓ³Éä¶ÔÏó»ñÈ¡¾ä±ú
+	if (mapFileInfo.fileHandle == INVALID_HANDLE_VALUE)ErrorMessageBox(NULL,_T("æ— æ³•æ‰“å¼€æ–‡ä»¶"));
+	//åˆ›å»ºæ–‡ä»¶æ˜ å°„å¯¹è±¡è·å–å¥æŸ„
 	mapFileInfo.fileMapHandle = CreateFileMapping(mapFileInfo.fileHandle, nullptr, PAGE_READONLY, 0, 0, nullptr);
 	if (mapFileInfo.fileMapHandle == NULL) {
         CloseHandle(mapFileInfo.fileHandle);
-		ErrorMessageBox(NULL, _T("ÎŞ·¨´´½¨ÎÄ¼şÓ³Éä¶ÔÏó"));
+		ErrorMessageBox(NULL, _T("æ— æ³•åˆ›å»ºæ–‡ä»¶æ˜ å°„å¯¹è±¡"));
 	}
-	//Ó³ÉäÎÄ¼şÊÓÍ¼»ñÈ¡ÎÄ¼şÓ³ÉäÖ¸Õë
+	//æ˜ å°„æ–‡ä»¶è§†å›¾è·å–æ–‡ä»¶æ˜ å°„æŒ‡é’ˆ
 	mapFileInfo.mapViewPointer = MapViewOfFile(mapFileInfo.fileMapHandle, FILE_MAP_READ, (mapFileInfo.fileOffset >> 32) & 0xffffffff, mapFileInfo.fileOffset & 0xffffffff, mapFileInfo.fileMapSize);
 	if (mapFileInfo.mapViewPointer == NULL) {
         CloseHandle(mapFileInfo.fileHandle);
         CloseHandle(mapFileInfo.fileMapHandle);
-		ErrorMessageBox(NULL, _T("ÎŞ·¨Ó³ÉäÎÄ¼şÊÓÍ¼"));
+		ErrorMessageBox(NULL, _T("æ— æ³•æ˜ å°„æ–‡ä»¶è§†å›¾"));
 	}
 	if (mapFileInfo.fileMapSize == 0) {
 		mapFileInfo.fileMapSize = file_size(mapFileInfo.fileName);
@@ -43,10 +43,10 @@ void FileService::MapFileReader(MapFileInfo& mapFileInfo)
 
 uintmax_t FileService::GetFileSize(const path& fileName)
 {
-	if (!exists(fileName))ErrorMessageBox(NULL, _T("ÎÄ¼ş(¼Ğ)²»´æÔÚ,ÎŞ·¨»ñÈ¡´óĞ¡"));
-	//»ñÈ¡ÆÕÍ¨ÎÄ¼ş´óĞ¡
+	if (!exists(fileName))ErrorMessageBox(NULL, _T("æ–‡ä»¶(å¤¹)ä¸å­˜åœ¨,æ— æ³•è·å–å¤§å°"));
+	//è·å–æ™®é€šæ–‡ä»¶å¤§å°
 	if (is_regular_file(fileName))return file_size(fileName);
-	//»ñÈ¡ÎÄ¼ş¼Ğ´óĞ¡
+	//è·å–æ–‡ä»¶å¤¹å¤§å°
 	uintmax_t size = 0;
     for (const auto& entry : filesystem::recursive_directory_iterator(fileName))
     {
@@ -61,40 +61,40 @@ uintmax_t FileService::GetFileSize(const path& fileName)
 void FileService::ZipFile(const path& sourceFile, const path& destFile, const unordered_map<BYTE, string>& symbolCode, size_t fileOffset, size_t fileMapSize)
 {
 	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)sourceFile.c_str(), fileOffset, fileMapSize);
-	//½øĞĞÎÄ¼şÓ³Éä
+	//è¿›è¡Œæ–‡ä»¶æ˜ å°„
 	FileService::MapFileReader(*mapFileInfo);
-	//»ñÈ¡ÎÄ¼şÖ¸Õë
+	//è·å–æ–‡ä»¶æŒ‡é’ˆ
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
-	//´ò¿ªÑ¹Ëõ°üÎÄ¼ş
+	//æ‰“å¼€å‹ç¼©åŒ…æ–‡ä»¶
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
 		delete mapFileInfo;
-		FileService::ErrorMessageBox(NULL, _T("ÎŞ·¨´ò¿ªÎÄ¼ş"));
+		FileService::ErrorMessageBox(NULL, _T("æ— æ³•æ‰“å¼€æ–‡ä»¶"));
 	}
-	//ÉèÖÃÎÄ¼şÖ¸Õë
+	//è®¾ç½®æ–‡ä»¶æŒ‡é’ˆ
 	LARGE_INTEGER tempL_I;
 	tempL_I.QuadPart = 0;
 	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
-	// Ğ´Èë»º³åÇø
-	std::vector<BYTE> writeBuffer; // Ğ´Èë»º³åÇø
-	size_t bufferCapacity = 4096; // ÉèÖÃ»º³åÇø´óĞ¡
+	// å†™å…¥ç¼“å†²åŒº
+	std::vector<BYTE> writeBuffer; // å†™å…¥ç¼“å†²åŒº
+	size_t bufferCapacity = 4096; // è®¾ç½®ç¼“å†²åŒºå¤§å°
 	writeBuffer.reserve(bufferCapacity);
 
-	UINT currentWord = 0; // µ±Ç° 32 Î»Êı¾İ¿é
-	int bitCount = 0;     // µ±Ç°Êı¾İ¿éÖĞÒÑÌî³äµÄÎ»Êı
+	UINT currentWord = 0; // å½“å‰ 32 ä½æ•°æ®å—
+	int bitCount = 0;     // å½“å‰æ•°æ®å—ä¸­å·²å¡«å……çš„ä½æ•°
 
-	// ±éÀúÎÄ¼şÓ³ÉäÇøÓò
+	// éå†æ–‡ä»¶æ˜ å°„åŒºåŸŸ
 	for (size_t i = 0; i < mapFileInfo->fileMapSize; ++i) {
 		const std::string& code = symbolCode.at(filePointer[i]);
 
-		// ½«±àÂëÖğÎ»Ìî³äµ½µ±Ç°Êı¾İ¿é
+		// å°†ç¼–ç é€ä½å¡«å……åˆ°å½“å‰æ•°æ®å—
 		for (char bit : code) {
 			currentWord = (currentWord << 1) | (bit - '0');
 			++bitCount;
 
-			// Èç¹ûµ±Ç°Êı¾İ¿éÒÑÂú£¨32 Î»£©£¬¼ÓÈë»º³åÇø
+			// å¦‚æœå½“å‰æ•°æ®å—å·²æ»¡ï¼ˆ32 ä½ï¼‰ï¼ŒåŠ å…¥ç¼“å†²åŒº
 			if (bitCount == 32) {
-				// ×ª»»ÎªĞ¡¶Ë×Ö½ÚĞò²¢¼ÓÈë»º³åÇø
+				// è½¬æ¢ä¸ºå°ç«¯å­—èŠ‚åºå¹¶åŠ å…¥ç¼“å†²åŒº
 				for (int j = 0; j < 4; ++j) {
 					writeBuffer.push_back(static_cast<BYTE>((currentWord >> (8 * (3 - j))) & 0xFF));
 				}
@@ -102,7 +102,7 @@ void FileService::ZipFile(const path& sourceFile, const path& destFile, const un
 				currentWord = 0;
 				bitCount = 0;
 
-				// Èç¹û»º³åÇøÂúÁË£¬Ğ´ÈëÎÄ¼ş
+				// å¦‚æœç¼“å†²åŒºæ»¡äº†ï¼Œå†™å…¥æ–‡ä»¶
 				if (writeBuffer.size() >= bufferCapacity) {
 					DWORD written;
 					WriteFile(fileHandle, writeBuffer.data(), writeBuffer.size(), &written, nullptr);
@@ -112,15 +112,15 @@ void FileService::ZipFile(const path& sourceFile, const path& destFile, const un
 		}
 	}
 
-	// ´¦ÀíÊ£Óà²»×ã 32 Î»µÄÊı¾İ¿é
+	// å¤„ç†å‰©ä½™ä¸è¶³ 32 ä½çš„æ•°æ®å—
 	if (bitCount > 0) {
-		currentWord <<= (32 - bitCount); // ×ó¶ÔÆëµ½ 32 Î»
+		currentWord <<= (32 - bitCount); // å·¦å¯¹é½åˆ° 32 ä½
 		for (int j = 0; j < 4; ++j) {
 			writeBuffer.push_back(static_cast<BYTE>((currentWord >> (8 * (3 - j))) & 0xFF));
 		}
 	}
 
-	// Ğ´ÈëÊ£ÓàÊı¾İ
+	// å†™å…¥å‰©ä½™æ•°æ®
 	if (!writeBuffer.empty()) {
 		DWORD written;
 		WriteFile(fileHandle, writeBuffer.data(), writeBuffer.size(), &written, nullptr);
@@ -131,23 +131,23 @@ void FileService::ZipFile(const path& sourceFile, const path& destFile, const un
 
 void FileService::WriteZipFileHeader(const path& destFile, const vector<pair<BYTE, BYTE>>& codeLength)
 {
-	//´ò¿ªÑ¹Ëõ°üÎÄ¼ş
+	//æ‰“å¼€å‹ç¼©åŒ…æ–‡ä»¶
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		FileService::ErrorMessageBox(NULL, _T("ÎŞ·¨´ò¿ªÎÄ¼ş"));
+		FileService::ErrorMessageBox(NULL, _T("æ— æ³•æ‰“å¼€æ–‡ä»¶"));
 	}
-	//ÉèÖÃÎÄ¼şÖ¸Õë
+	//è®¾ç½®æ–‡ä»¶æŒ‡é’ˆ
 	LARGE_INTEGER tempL_I;
 	tempL_I.QuadPart = 0;
 	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
 	DWORD written;
-	//±êÊ¶Ç©Ãû
+	//æ ‡è¯†ç­¾å
 	char identification[2] = { 'y','a' };
 	WriteFile(fileHandle, identification, sizeof(identification), &written, nullptr);
-	//Ê×²¿´óĞ¡
+	//é¦–éƒ¨å¤§å°
 	unsigned short headerSize = 4 + sizeof(codeLength[0]) * codeLength.size();
 	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
-	//·ûºÅ-±àÂë³¤¶È±í
+	//ç¬¦å·-ç¼–ç é•¿åº¦è¡¨
 	for (size_t i = 0; i < codeLength.size(); ++i)
 	{
 		WriteFile(fileHandle, &codeLength[i], sizeof(codeLength[i]), &written, nullptr);
@@ -158,28 +158,28 @@ void FileService::WriteZipFileHeader(const path& destFile, const vector<pair<BYT
 
 void FileService::WriteFileHeader(const path& destFile, const path& sourceFile, const pair<uintmax_t, BYTE>& WPL_Size)
 {
-	//´ò¿ªÑ¹Ëõ°üÎÄ¼ş
+	//æ‰“å¼€å‹ç¼©åŒ…æ–‡ä»¶
 	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		FileService::ErrorMessageBox(NULL, _T("ÎŞ·¨´ò¿ªÎÄ¼ş"));
+		FileService::ErrorMessageBox(NULL, _T("æ— æ³•æ‰“å¼€æ–‡ä»¶"));
 	}
-	//ÉèÖÃÎÄ¼şÖ¸Õë
+	//è®¾ç½®æ–‡ä»¶æŒ‡é’ˆ
 	LARGE_INTEGER tempL_I;
 	tempL_I.QuadPart = 0;
 	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
 	DWORD written;
-	//Ê×²¿´óĞ¡
+	//é¦–éƒ¨å¤§å°
 	unsigned short headerSize = 19 + sourceFile.native().size() * 2;
 	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
-	//ÎÄ¼şÀàĞÍºÍÌî³ä±ÈÌØÊı
+	//æ–‡ä»¶ç±»å‹å’Œå¡«å……æ¯”ç‰¹æ•°
 	BYTE fileType_bitsCount = ((is_directory(sourceFile) ? 1 : 0) << 7) + WPL_Size.second;
 	WriteFile(fileHandle, &fileType_bitsCount, sizeof(fileType_bitsCount), &written, nullptr);
-	//Ô­Ê¼ÎÄ¼ş(¼Ğ)´óĞ¡
+	//åŸå§‹æ–‡ä»¶(å¤¹)å¤§å°
 	uintmax_t oldSize = GetFileSize(sourceFile);
 	WriteFile(fileHandle, &oldSize, sizeof(oldSize), &written, nullptr);
-	//Êı¾İ¿é´óĞ¡
+	//æ•°æ®å—å¤§å°
 	WriteFile(fileHandle, &WPL_Size.first, sizeof(WPL_Size.first), &written, nullptr);
-	//ÎÄ¼şÃû
+	//æ–‡ä»¶å
 	WriteFile(fileHandle, sourceFile.c_str(), sourceFile.native().size() * 2, &written, nullptr);
 
 	CloseHandle(fileHandle);

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include<windows.h>
 #include<tchar.h>
 #include <filesystem>
@@ -9,22 +9,22 @@ using namespace filesystem;
 
 struct MapFileInfo
 {
-	//ÎÄ¼şÃû
+	//æ–‡ä»¶å
 	LPTSTR fileName = nullptr;
-	//´ò¿ªµÄÎÄ¼ş¾ä±ú
+	//æ‰“å¼€çš„æ–‡ä»¶å¥æŸ„
 	HANDLE fileHandle = nullptr;
-	//ÎÄ¼şÓ³Éä¶ÔÏó¾ä±ú
+	//æ–‡ä»¶æ˜ å°„å¯¹è±¡å¥æŸ„
 	HANDLE fileMapHandle = nullptr;
-	//ÎÄ¼şÓ³ÉäÖ¸Õë
+	//æ–‡ä»¶æ˜ å°„æŒ‡é’ˆ
 	LPVOID mapViewPointer = nullptr;
-	//ÎÄ¼şÓ³ÉäµÄÆğÊ¼Î»ÖÃ
+	//æ–‡ä»¶æ˜ å°„çš„èµ·å§‹ä½ç½®
 	size_t fileOffset;
-	//ÎÄ¼şÓ³Éä´óĞ¡
+	//æ–‡ä»¶æ˜ å°„å¤§å°
 	size_t fileMapSize;
 	MapFileInfo(LPTSTR name,size_t offset = 0,size_t size = 0):fileName(name), fileOffset(offset), fileMapSize(size) {}
 	~MapFileInfo()
 	{	
-		//ÊÍ·Å×ÊÔ´
+		//é‡Šæ”¾èµ„æº
 		if (mapViewPointer)UnmapViewOfFile(mapViewPointer);
 		if (fileMapHandle)CloseHandle(fileMapHandle);
 		if (fileHandle)CloseHandle(fileHandle);
@@ -34,16 +34,16 @@ struct MapFileInfo
 class FileService
 {
 public:
-	//´íÎóĞÅÏ¢µ¯´°
+	//é”™è¯¯ä¿¡æ¯å¼¹çª—
 	static void ErrorMessageBox(const HWND& hwnd = NULL, const TCHAR* msg = _T(""), bool showErrorCode = true);
-	//Ê¹ÓÃÄÚ´æÓ³Éä¶ÁÈ¡ÎÄ¼ş
+	//ä½¿ç”¨å†…å­˜æ˜ å°„è¯»å–æ–‡ä»¶
 	static void MapFileReader(MapFileInfo & mapFileInfo);
-	//Ê¹ÓÃµİ¹é»ñÈ¡ÎÄ¼ş¼Ğ´óĞ¡
+	//ä½¿ç”¨é€’å½’è·å–æ–‡ä»¶å¤¹å¤§å°
     static uintmax_t GetFileSize(const path& fileName);
-	//½«Ô´ÎÄ¼şÄ³ÇøÓòÖĞµÄÊı¾İÒÀÕÕ ·ûºÅ-±àÂë±í Ğ´ÈëÄ¿µÄÎÄ¼ş
+	//å°†æºæ–‡ä»¶æŸåŒºåŸŸä¸­çš„æ•°æ®ä¾ç…§ ç¬¦å·-ç¼–ç è¡¨ å†™å…¥ç›®çš„æ–‡ä»¶
 	static void ZipFile(const path& sourceFile, const  path& destFile, const unordered_map<BYTE, string>& symbolCode, size_t fileOffset = 0, size_t fileMapSize = 0);
-	//Ğ´ÈëÑ¹ËõÎÄ¼şÊ×²¿
+	//å†™å…¥å‹ç¼©æ–‡ä»¶é¦–éƒ¨
 	static void WriteZipFileHeader(const path& destFile, const vector<pair<BYTE, BYTE>>& codeLength);
-	//Ğ´ÈëÎÄ¼ş(¼Ğ)Ê×²¿
+	//å†™å…¥æ–‡ä»¶(å¤¹)é¦–éƒ¨
 	static void WriteFileHeader(const path& destFile, const path& sourceFile, const pair<uintmax_t, BYTE>& WPL_Size);
 };

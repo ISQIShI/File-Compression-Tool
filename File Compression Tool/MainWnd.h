@@ -1,20 +1,20 @@
-#pragma once
+ï»¿#pragma once
 #include"MyWnds.h"
 
 enum MainWndChildID :unsigned char {
-	//¹¤¾ßÀ¸
+	//å·¥å…·æ 
 	toolBarID = 1,
-	//¹¤¾ßÀ¸µÄ°´Å¥
+	//å·¥å…·æ çš„æŒ‰é’®
 	buttonOpenID_ToolBar,
 	buttonPreviewID_ToolBar,
 	buttonZipID_ToolBar,
 	buttonUnpackID_ToolBar,
 	buttonSetID_ToolBar,
-	//¹¤¾ßÀ¸µÄ°´Å¥µÄÏÂÀ­²Ëµ¥µÄÑ¡Ïî
+	//å·¥å…·æ çš„æŒ‰é’®çš„ä¸‹æ‹‰èœå•çš„é€‰é¡¹
 	firstPopUpMenuOptionID_ButtonUnpack_ToolBar,
 	secondPopUpMenuOptionID_ButtonUnpack_ToolBar,
 	thirdPopUpMenuOptionID_ButtonUnpack_ToolBar,
-	//ÎÄ¼şÁĞ±í
+	//æ–‡ä»¶åˆ—è¡¨
 	fileListID,
 };
 
@@ -23,38 +23,38 @@ enum class FileListColumnID :unsigned char {
 	columnTypeID
 };
 
-//Ö÷´°¿ÚÀà
+//ä¸»çª—å£ç±»
 class MainWnd :public MyWnds {
-	//²ÉÓÃµ¥ÀıÉè¼ÆÀíÄî£¬Ö÷´°¿ÚÀàÖ»ÄÜÊµÀı»¯Ò»¸ö¶ÔÏó
+	//é‡‡ç”¨å•ä¾‹è®¾è®¡ç†å¿µï¼Œä¸»çª—å£ç±»åªèƒ½å®ä¾‹åŒ–ä¸€ä¸ªå¯¹è±¡
 	MainWnd(){
 		wndWidth = 0.53 * maxScreenWidth;
 		wndHeight = 0.62 * maxScreenHeight;
 		if (wndWidth < 960) wndWidth = 960;
 		if (wndHeight < 540)wndHeight = 540;
-	} //½ûÖ¹Íâ²¿¹¹Ôì
-	~MainWnd()= default; //½ûÖ¹Íâ²¿Îö¹¹
-	MainWnd(const MainWnd& mainWnd) = delete;//½ûÖ¹Íâ²¿¿½±´¹¹Ôì
-	const MainWnd& operator=(const MainWnd& mainWnd) = delete;//½ûÖ¹Íâ²¿¸³Öµ²Ù×÷
+	} //ç¦æ­¢å¤–éƒ¨æ„é€ 
+	~MainWnd()= default; //ç¦æ­¢å¤–éƒ¨ææ„
+	MainWnd(const MainWnd& mainWnd) = delete;//ç¦æ­¢å¤–éƒ¨æ‹·è´æ„é€ 
+	const MainWnd& operator=(const MainWnd& mainWnd) = delete;//ç¦æ­¢å¤–éƒ¨èµ‹å€¼æ“ä½œ
 
-	//----------------------×ÓÀàÖØĞ´µÄº¯Êı--------------------------------
-	//×¢²á´°¿ÚÀà
+	//----------------------å­ç±»é‡å†™çš„å‡½æ•°--------------------------------
+	//æ³¨å†Œçª—å£ç±»
 	ATOM RegisterWndClass() override;
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	HWND CreateWnd() override;
 
 	LRESULT WM_COMMAND_WndProc() override;
 	LRESULT WM_NOTIFY_WndProc() override;
-	//´¦Àí´°¿Ú´óĞ¡/Î»ÖÃ·¢Éú¸Ä±äºóÊÕµ½µÄÏûÏ¢£¬ÔÚÕâÀïÏŞÖÆÁË´°¿ÚµÄ×îĞ¡³ß´ç
+	//å¤„ç†çª—å£å¤§å°/ä½ç½®å‘ç”Ÿæ”¹å˜åæ”¶åˆ°çš„æ¶ˆæ¯ï¼Œåœ¨è¿™é‡Œé™åˆ¶äº†çª—å£çš„æœ€å°å°ºå¯¸
 	LRESULT WM_WINDOWPOSCHANGING_WndProc() override;
-	//´¦ÀíÉè¶¨ºÃ´°¿Ú´óĞ¡/Î»ÖÃºóµÄ·´À¡ĞÅÏ¢£¬ÔÚÕâÀïÓÃÓÚÍ¬²½µ÷ÕûÊôÓÚ¸Ã´°¿ÚµÄËùÓĞ×Ó´°¿Ú/¿Ø¼şµÄÎ»ÖÃ»ò´óĞ¡£¬ÊµÏÖ×ÔÊÊÓ¦±ä»¯
+	//å¤„ç†è®¾å®šå¥½çª—å£å¤§å°/ä½ç½®åçš„åé¦ˆä¿¡æ¯ï¼Œåœ¨è¿™é‡Œç”¨äºåŒæ­¥è°ƒæ•´å±äºè¯¥çª—å£çš„æ‰€æœ‰å­çª—å£/æ§ä»¶çš„ä½ç½®æˆ–å¤§å°ï¼Œå®ç°è‡ªé€‚åº”å˜åŒ–
 	LRESULT WM_WINDOWPOSCHANGED_WndProc() override;
-	//´´½¨´°¿ÚÊ±Ë³´øÖ´ĞĞµÄ²Ù×÷
+	//åˆ›å»ºçª—å£æ—¶é¡ºå¸¦æ‰§è¡Œçš„æ“ä½œ
 	LRESULT WM_CREATE_WndProc() override;
-	//¹Ø±Õ´°¿Ú
+	//å…³é—­çª—å£
 	LRESULT WM_CLOSE_WndProc() override;
-	//Ïú»Ù´°¿Ú
+	//é”€æ¯çª—å£
 	LRESULT WM_DESTROY_WndProc() override;
-	//ÖØĞ´µÄÃ¶¾Ù×Ó´°¿Ú¹ı³Ìº¯Êı
+	//é‡å†™çš„æšä¸¾å­çª—å£è¿‡ç¨‹å‡½æ•°
 	BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam) override;
 
 public:

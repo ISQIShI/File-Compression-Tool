@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include"MainWnd.h"
 #include<vector>
 #include<filesystem>
@@ -23,40 +23,40 @@ enum class selectedFileListColumnID :unsigned char {
 };
 
 class ZipFunc :public MyWnds{
-	//´æ´¢Ñ¡ÔñµÄÎÄ¼şÂ·¾¶
+	//å­˜å‚¨é€‰æ‹©çš„æ–‡ä»¶è·¯å¾„
 	vector<path> filePathArr;
-	//´æ´¢Ñ¹Ëõ°üµÄÂ·¾¶
+	//å­˜å‚¨å‹ç¼©åŒ…çš„è·¯å¾„
 	path zipFileName;
-	//--------------------------Ö´ĞĞÑ¹Ëõ¹¦ÄÜµÄº¯Êı----------------------------
+	//--------------------------æ‰§è¡Œå‹ç¼©åŠŸèƒ½çš„å‡½æ•°----------------------------
 	void StartZip(bool openMultiThread = false);
 
-	//--------------------------×ÓÀàÖØĞ´µÄ´°¿Úº¯Êı----------------------------
-	//×¢²á´°¿ÚÀà
+	//--------------------------å­ç±»é‡å†™çš„çª—å£å‡½æ•°----------------------------
+	//æ³¨å†Œçª—å£ç±»
 	ATOM RegisterWndClass() override;
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	HWND CreateWnd() override;
 
 	LRESULT WM_COMMAND_WndProc() override;
 	LRESULT WM_NOTIFY_WndProc();
 	LRESULT WM_PAINT_WndProc() override;
-	//´´½¨´°¿ÚÊ±Ë³´øÖ´ĞĞµÄ²Ù×÷
+	//åˆ›å»ºçª—å£æ—¶é¡ºå¸¦æ‰§è¡Œçš„æ“ä½œ
 	LRESULT WM_CREATE_WndProc() override;
-	//¹Ø±Õ´°¿Ú
+	//å…³é—­çª—å£
 	LRESULT WM_CLOSE_WndProc() override;
-	//Ïú»Ù´°¿Ú
+	//é”€æ¯çª—å£
 	LRESULT WM_DESTROY_WndProc() override;
 	//======================================================================
 
-	//²ÉÓÃµ¥ÀıÉè¼ÆÀíÄî£¬Ö÷´°¿ÚÀàÖ»ÄÜÊµÀı»¯Ò»¸ö¶ÔÏó
+	//é‡‡ç”¨å•ä¾‹è®¾è®¡ç†å¿µï¼Œä¸»çª—å£ç±»åªèƒ½å®ä¾‹åŒ–ä¸€ä¸ªå¯¹è±¡
 	ZipFunc() {
 		isModalDialog = MainWnd::GetMainWnd().GetWndHwnd();
 		wndWidth = 1000;
 		wndHeight = 650;
 
-	} //½ûÖ¹Íâ²¿¹¹Ôì
-	~ZipFunc() = default; //½ûÖ¹Íâ²¿Îö¹¹
-	ZipFunc(const ZipFunc& mainWnd) = delete;//½ûÖ¹Íâ²¿¿½±´¹¹Ôì
-	const ZipFunc& operator=(const ZipFunc& mainWnd) = delete;//½ûÖ¹Íâ²¿¸³Öµ²Ù×÷
+	} //ç¦æ­¢å¤–éƒ¨æ„é€ 
+	~ZipFunc() = default; //ç¦æ­¢å¤–éƒ¨ææ„
+	ZipFunc(const ZipFunc& mainWnd) = delete;//ç¦æ­¢å¤–éƒ¨æ‹·è´æ„é€ 
+	const ZipFunc& operator=(const ZipFunc& mainWnd) = delete;//ç¦æ­¢å¤–éƒ¨èµ‹å€¼æ“ä½œ
 public:
 	static ZipFunc& GetZipFunc() {
 		static ZipFunc zipFunc;

@@ -1,4 +1,4 @@
-#include"ZipFunc.h"
+ï»¿#include"ZipFunc.h"
 #include <shobjidl.h> 
 #include "FileService.h"
 #include <chrono>
@@ -6,23 +6,23 @@
 
 void ZipFunc::StartZip(bool openMultiThread)
 {
-	//É¾³ıÎÄ¼ş
+	//åˆ é™¤æ–‡ä»¶
 	if (exists(zipFileName))remove(zipFileName);
-	//¿ªÊ¼Ñ¹Ëõ½øĞĞ¼ÆÊ±
+	//å¼€å§‹å‹ç¼©è¿›è¡Œè®¡æ—¶
 	auto startTime = std::chrono::high_resolution_clock::now();
 
-	//-----------------------------------µ¥Ïß³Ì-----------------------------
-	//´´½¨ ·ûºÅ-ÆµÂÊ±í
+	//-----------------------------------å•çº¿ç¨‹-----------------------------
+	//åˆ›å»º ç¬¦å·-é¢‘ç‡è¡¨
 	auto symbolFrequency = new unordered_map<BYTE, size_t>;
 	
 	for (auto &filePath : filePathArr)
 	{
-		//»ñÈ¡ÆÕÍ¨ÎÄ¼şÖĞ ·ûºÅ-ÆµÂÊ
+		//è·å–æ™®é€šæ–‡ä»¶ä¸­ ç¬¦å·-é¢‘ç‡
 		if (is_regular_file(filePath)) {
 			HuffmanCode::GetSymbolFrequency(*symbolFrequency, filePath);
 			continue;
 		}
-		//±éÀúÎÄ¼ş¼ĞÖĞËùÓĞÎÄ¼ş£¬»ñÈ¡ ·ûºÅ-ÆµÂÊ
+		//éå†æ–‡ä»¶å¤¹ä¸­æ‰€æœ‰æ–‡ä»¶ï¼Œè·å– ç¬¦å·-é¢‘ç‡
 		for (const auto& entry : filesystem::recursive_directory_iterator(filePath))
 		{
 			if (entry.is_regular_file())
@@ -31,24 +31,24 @@ void ZipFunc::StartZip(bool openMultiThread)
 			}
 		}
 	}
-	//´´½¨ ·ûºÅ-±àÂë³¤¶È±í
+	//åˆ›å»º ç¬¦å·-ç¼–ç é•¿åº¦è¡¨
 	auto codeLength = new vector<pair<BYTE, BYTE>>;
 	HuffmanNode* rootNode = HuffmanCode::BuildHuffmanTree(*symbolFrequency);
-	//µİ¹é±éÀú¹ş·òÂüÊ÷,»ñÈ¡¸÷·ûºÅµÄ±àÂë³¤¶È
+	//é€’å½’éå†å“ˆå¤«æ›¼æ ‘,è·å–å„ç¬¦å·çš„ç¼–ç é•¿åº¦
 	HuffmanCode::EncodeHuffmanTree(*codeLength, rootNode);
-	//µİ¹éÏú»Ù¹ş·òÂüÊ÷
+	//é€’å½’é”€æ¯å“ˆå¤«æ›¼æ ‘
 	HuffmanCode::DestroyHuffmanTree(rootNode);
-	//´´½¨ ·ûºÅ-·¶Ê½±àÂë±í
+	//åˆ›å»º ç¬¦å·-èŒƒå¼ç¼–ç è¡¨
 	auto * symbolCode = new unordered_map<BYTE, string>;
 	HuffmanCode::GetNormalSymbolCode(*codeLength, *symbolCode);
-	//¼ÆÊ±1
+	//è®¡æ—¶1
 	auto middleTime = std::chrono::high_resolution_clock::now();
-	//Ğ´ÈëÑ¹Ëõ°üÊ×²¿
+	//å†™å…¥å‹ç¼©åŒ…é¦–éƒ¨
 	//FileService::WriteZipFileHeader(zipFileName, *codeLength);
-	//Ğ´ÈëÎÄ¼ş
+	//å†™å…¥æ–‡ä»¶
 	for (auto& filePath : filePathArr) {
 		if (is_regular_file(filePath)) {
-			//Ğ´ÈëÎÄ¼şÊ×²¿
+			//å†™å…¥æ–‡ä»¶é¦–éƒ¨
 			FileService::ZipFile(filePath, zipFileName, *symbolCode);
 			continue;
 		}
@@ -60,30 +60,30 @@ void ZipFunc::StartZip(bool openMultiThread)
 			}
 		}
 	}
-	//Ïú»Ù×ÊÔ´
+	//é”€æ¯èµ„æº
 	delete symbolFrequency;
 	delete codeLength;
 	delete symbolCode;
-	//Íê³ÉÑ¹Ëõ½áÊø¼ÆÊ±
+	//å®Œæˆå‹ç¼©ç»“æŸè®¡æ—¶
 	auto endTime = std::chrono::high_resolution_clock::now();
 	auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(middleTime - startTime);
 	auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(endTime - middleTime);
 	TCHAR tempTCHAR[50];
-	_stprintf_s (tempTCHAR, _T("Ñ¹ËõÊ±¼ä£º\n»ñÈ¡±àÂë±í %f Ãë\nĞ´ÈëÎÄ¼ş %f Ãë"), duration1.count()/1000000.0,duration2.count()/1000000.0);
-	TestMessageBox(hwnd_WndProc, tempTCHAR, _T("Ñ¹ËõÍê³É"));
+	_stprintf_s (tempTCHAR, _T("å‹ç¼©æ—¶é—´ï¼š\nè·å–ç¼–ç è¡¨ %f ç§’\nå†™å…¥æ–‡ä»¶ %f ç§’"), duration1.count()/1000000.0,duration2.count()/1000000.0);
+	TestMessageBox(hwnd_WndProc, tempTCHAR, _T("å‹ç¼©å®Œæˆ"));
 }
 
 ATOM ZipFunc::RegisterWndClass()
 {
-	//ÊµÀı»¯´°¿ÚÀà¶ÔÏó
+	//å®ä¾‹åŒ–çª—å£ç±»å¯¹è±¡
 	WNDCLASSEX zipFuncWndClass = { 0 };
 	zipFuncWndClass.cbSize = sizeof(WNDCLASSEX);
-	zipFuncWndClass.style = CS_DBLCLKS;//ÀàÑùÊ½
-	zipFuncWndClass.lpfnWndProc = StaticWndProc;//´°¿Ú¹ı³Ì
-	zipFuncWndClass.hInstance = hInstance;//³ÌĞòÊµÀı
-	zipFuncWndClass.hbrBackground = HBRUSH(6);//Àà±³¾°»­Ë¢
-	zipFuncWndClass.lpszClassName = _T("zipFuncWndClassName");//´°¿ÚÀàÃû
-	zipFuncWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);//´°¿ÚÍ¼±ê
+	zipFuncWndClass.style = CS_DBLCLKS;//ç±»æ ·å¼
+	zipFuncWndClass.lpfnWndProc = StaticWndProc;//çª—å£è¿‡ç¨‹
+	zipFuncWndClass.hInstance = hInstance;//ç¨‹åºå®ä¾‹
+	zipFuncWndClass.hbrBackground = HBRUSH(6);//ç±»èƒŒæ™¯ç”»åˆ·
+	zipFuncWndClass.lpszClassName = _T("zipFuncWndClassName");//çª—å£ç±»å
+	zipFuncWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);//çª—å£å›¾æ ‡
 	return RegisterClassEx(&zipFuncWndClass);
 }
 
@@ -91,108 +91,108 @@ HWND ZipFunc::CreateWnd()
 {
 	RECT rect;
 	GetWindowRect(MainWnd::GetMainWnd().GetWndHwnd(), &rect);
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	HWND zipFuncWndHwnd = CreateWindowEx(
-		WS_EX_CONTROLPARENT | WS_EX_ACCEPTFILES, _T("zipFuncWndClassName"), _T("ĞÂ½¨Ñ¹ËõÎÄ¼ş"), WS_TILED | WS_CAPTION | WS_SYSMENU,
+		WS_EX_CONTROLPARENT | WS_EX_ACCEPTFILES, _T("zipFuncWndClassName"), _T("æ–°å»ºå‹ç¼©æ–‡ä»¶"), WS_TILED | WS_CAPTION | WS_SYSMENU,
 		0.5 * (MainWnd::GetMainWnd().GetWndWidth() - wndWidth) + rect.left, 0.5 * (MainWnd::GetMainWnd().GetWndHeight() - wndHeight) + rect.top, wndWidth, wndHeight,
 		isModalDialog, NULL, hInstance, this
 	);
-	//ÏÔÊ¾´°¿Ú
+	//æ˜¾ç¤ºçª—å£
 	if (zipFuncWndHwnd) ShowWindow(zipFuncWndHwnd, SW_SHOW);
 	return zipFuncWndHwnd;
 }
 
 LRESULT ZipFunc::WM_COMMAND_WndProc()
 {
-	//Í¨Öª´úÂëÊÇµã»÷°´Å¥
+	//é€šçŸ¥ä»£ç æ˜¯ç‚¹å‡»æŒ‰é’®
 	if (HIWORD(wParam_WndProc) == BN_CLICKED) {
-		//¸ù¾İµã»÷µÄ°´Å¥²»Í¬Ö´ĞĞ²»Í¬¹¦ÄÜ
+		//æ ¹æ®ç‚¹å‡»çš„æŒ‰é’®ä¸åŒæ‰§è¡Œä¸åŒåŠŸèƒ½
 		switch (LOWORD(wParam_WndProc)) {
-		//µã»÷Ñ¡ÔñÎÄ¼şºÍÑ¡ÔñÎÄ¼ş¼Ğ°´Å¥
+		//ç‚¹å‡»é€‰æ‹©æ–‡ä»¶å’Œé€‰æ‹©æ–‡ä»¶å¤¹æŒ‰é’®
 		case (int)ZipFuncWndChildID::buttonSelectFileID:case (int)ZipFuncWndChildID::buttonSelectFolderID:
 		{
-			//³õÊ¼»¯×ÊÔ´
+			//åˆå§‹åŒ–èµ„æº
 			HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 			IFileOpenDialog* fileOpenDialog = nullptr;
-			//´´½¨¶Ô»°¿òÊµÀı
+			//åˆ›å»ºå¯¹è¯æ¡†å®ä¾‹
 			hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileOpenDialog));
 			if (!SUCCEEDED(hr))break;
-			//ÅäÖÃÎÄ¼ş¶Ô»°¿òÑ¡Ïî
+			//é…ç½®æ–‡ä»¶å¯¹è¯æ¡†é€‰é¡¹
             DWORD dword;
             hr = fileOpenDialog ->GetOptions(&dword);
 			if (LOWORD(wParam_WndProc)==(int)ZipFuncWndChildID::buttonSelectFileID)
 			{
-				//ÉèÖÃÎÄ¼ş¶àÑ¡
+				//è®¾ç½®æ–‡ä»¶å¤šé€‰
 				hr = fileOpenDialog ->SetOptions(dword | FOS_ALLOWMULTISELECT); 
-				//ÉèÖÃ¹ıÂËÆ÷
-				COMDLG_FILTERSPEC filter[] = { { L"ËùÓĞÎÄ¼ş", L"*.*" }, { L"ÎÄ±¾ÎÄ¼ş", L"*.txt" }};
+				//è®¾ç½®è¿‡æ»¤å™¨
+				COMDLG_FILTERSPEC filter[] = { { L"æ‰€æœ‰æ–‡ä»¶", L"*.*" }, { L"æ–‡æœ¬æ–‡ä»¶", L"*.txt" }};
 				hr = fileOpenDialog->SetFileTypes(ARRAYSIZE(filter), filter);
 			}
 			else{
-				//ÉèÖÃÎÄ¼ş¼Ğ¶àÑ¡
+				//è®¾ç½®æ–‡ä»¶å¤¹å¤šé€‰
 				hr = fileOpenDialog ->SetOptions(dword | FOS_PICKFOLDERS | FOS_ALLOWMULTISELECT); 
 			}
-      		//ÏÔÊ¾¶Ô»°¿ò
+      		//æ˜¾ç¤ºå¯¹è¯æ¡†
 			hr = fileOpenDialog->Show(hwnd_WndProc);
-            //»ñÈ¡ÓÃ»§Ñ¡Ôñ½á¹û
+            //è·å–ç”¨æˆ·é€‰æ‹©ç»“æœ
             IShellItemArray* selectedIItemArray;
 			hr = fileOpenDialog->GetResults(&selectedIItemArray);
 			if (!SUCCEEDED(hr))break;
-			//»ñÈ¡Ñ¡ÔñµÄÎÄ¼şÊı
+			//è·å–é€‰æ‹©çš„æ–‡ä»¶æ•°
 			DWORD fileCount = 0;
 			selectedIItemArray->GetCount(&fileCount);
-			//±éÀúËùÓĞÑ¡ÔñµÄÎÄ¼ş
+			//éå†æ‰€æœ‰é€‰æ‹©çš„æ–‡ä»¶
 			for (DWORD x = 0; x < fileCount; ++x) {
 				IShellItem* selectedItem = nullptr;
 				LPWSTR filePath = nullptr;
-				//»ñÈ¡Ë÷ÒıÎªxµÄÎÄ¼ş
+				//è·å–ç´¢å¼•ä¸ºxçš„æ–‡ä»¶
 				selectedIItemArray->GetItemAt(x,&selectedItem);
-				//»ñÈ¡ÎÄ¼şÂ·¾¶
+				//è·å–æ–‡ä»¶è·¯å¾„
 				selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-				//µ±Êı×éÖĞ²»´æÔÚ¸ÃÎÄ¼şÂ·¾¶Ê±£¬²åÈëÎÄ¼şÂ·¾¶Êı×é
+				//å½“æ•°ç»„ä¸­ä¸å­˜åœ¨è¯¥æ–‡ä»¶è·¯å¾„æ—¶ï¼Œæ’å…¥æ–‡ä»¶è·¯å¾„æ•°ç»„
 				if (find_if(filePathArr.begin(), filePathArr.end(), [&filePath](path& temp) -> bool {return temp.wstring() == wstring(filePath); }) == filePathArr.end()){
 					filePathArr.push_back(filePath);
 				}
-				//Ïú»Ù×ÊÔ´
+				//é”€æ¯èµ„æº
 				selectedItem->Release();
 				CoTaskMemFree(filePath);
 			}
-			//Ïú»Ù×ÊÔ´
+			//é”€æ¯èµ„æº
 			selectedIItemArray->Release();
 			fileOpenDialog->Release();
 			CoUninitialize();
-			//×¼±¸Ë¢ĞÂÁĞ±íÊı¾İ
-			//É¾³ıËùÓĞĞĞ
+			//å‡†å¤‡åˆ·æ–°åˆ—è¡¨æ•°æ®
+			//åˆ é™¤æ‰€æœ‰è¡Œ
 			ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID));
-			//½«Ïî²åÈëÎÄ¼şÁĞ±í
+			//å°†é¡¹æ’å…¥æ–‡ä»¶åˆ—è¡¨
 			LVITEM item;
 			wstring tempWString;
 			TCHAR tempTCHAR[21];
 			for (size_t x = 0; x < filePathArr.size();++x) {
 				item.mask = LVIF_TEXT;
-				item.iItem = x;//ÏîË÷Òı
-				item.iSubItem = 0;//×ÓÏîË÷Òı
+				item.iItem = x;//é¡¹ç´¢å¼•
+				item.iSubItem = 0;//å­é¡¹ç´¢å¼•
 				tempWString = filePathArr[x].filename().wstring();
-				item.pszText = (LPTSTR)tempWString.c_str();//Ãû³Æ
+				item.pszText = (LPTSTR)tempWString.c_str();//åç§°
 				ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
-				++item.iSubItem;//×ÓÏîË÷Òı
-				if (is_directory(filePathArr[x]))item.pszText = (LPTSTR)_T("ÎÄ¼ş¼Ğ");//ÀàĞÍ
-				else item.pszText = (LPTSTR)_T("ÎÄ¼ş");
+				++item.iSubItem;//å­é¡¹ç´¢å¼•
+				if (is_directory(filePathArr[x]))item.pszText = (LPTSTR)_T("æ–‡ä»¶å¤¹");//ç±»å‹
+				else item.pszText = (LPTSTR)_T("æ–‡ä»¶");
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
-				++item.iSubItem;//×ÓÏîË÷Òı
+				++item.iSubItem;//å­é¡¹ç´¢å¼•
 				uintmax_t size = FileService::GetFileSize(filePathArr[x]);
 				if(size >= (uintmax_t(2048*1024)*1024))_stprintf_s(tempTCHAR, _T("%.2f GB"), double(size)/(1024*1024*1024));
 				else if(size >= 2048*1024)_stprintf_s(tempTCHAR, _T("%.2f MB"), double(size)/(1024*1024));
 				else if(size >= 2048)_stprintf_s(tempTCHAR, _T("%.2f KB"), double(size)/1024);
 				else _stprintf_s(tempTCHAR, _T("%.2f B"), double(size));
-				item.pszText = tempTCHAR;//´óĞ¡
+				item.pszText = tempTCHAR;//å¤§å°
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
-				++item.iSubItem;//×ÓÏîË÷Òı
+				++item.iSubItem;//å­é¡¹ç´¢å¼•
 				tempWString = filePathArr[x].wstring();
-				item.pszText = (LPTSTR)tempWString.c_str();//Â·¾¶
+				item.pszText = (LPTSTR)tempWString.c_str();//è·¯å¾„
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 			}
 			break;
@@ -200,86 +200,86 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 		case (int)ZipFuncWndChildID::buttonDeleteID: {
 			HWND hwnd = GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID);
 			for (size_t x = 0; x < filePathArr.size(); ++x) {
-				//µã»÷É¾³ıÊ±±éÀúËùÓĞÏî
+				//ç‚¹å‡»åˆ é™¤æ—¶éå†æ‰€æœ‰é¡¹
 				UINT state = ListView_GetItemState(hwnd, x, LVIS_SELECTED);
-				//Èç¹ûÏî±»Ñ¡ÖĞÔòÉ¾³ı
+				//å¦‚æœé¡¹è¢«é€‰ä¸­åˆ™åˆ é™¤
 				if (state & LVIS_SELECTED) {
 					filePathArr.erase(filePathArr.begin() + x);
 					ListView_DeleteItem(hwnd, x);
-					--x;//ĞŞÕıË÷ÒıÖµ
+					--x;//ä¿®æ­£ç´¢å¼•å€¼
 				}
 			}
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonStartID:{
-			//Ê×ÏÈÉó²éÑ¹ËõÎÄ¼şÃûÊÇ·ñÕıÈ·
+			//é¦–å…ˆå®¡æŸ¥å‹ç¼©æ–‡ä»¶åæ˜¯å¦æ­£ç¡®
 			if (filePathArr.empty()) {
-				MessageBox(hwnd_WndProc, _T("Ã»ÓĞÒªÑ¹ËõµÄÎÄ¼ş(ÎÄ¼ş¼Ğ),ÇëÏÈÌí¼ÓÎÄ¼ş(ÎÄ¼ş¼Ğ)"), _T("Ñ¼Ò»Ñ¹"), MB_OK | MB_TASKMODAL);
+				MessageBox(hwnd_WndProc, _T("æ²¡æœ‰è¦å‹ç¼©çš„æ–‡ä»¶(æ–‡ä»¶å¤¹),è¯·å…ˆæ·»åŠ æ–‡ä»¶(æ–‡ä»¶å¤¹)"), _T("é¸­ä¸€å‹"), MB_OK | MB_TASKMODAL);
 				break;
 			}
 			int length = GetWindowTextLength(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID));
 			if (!length) {
-				MessageBox(hwnd_WndProc, _T("ÎÄ¼şÃûÎª¿Õ,Çë¼ì²éÑ¹ËõÎÄ¼şÃû"), _T("Ñ¼Ò»Ñ¹"), MB_OK | MB_TASKMODAL);
+				MessageBox(hwnd_WndProc, _T("æ–‡ä»¶åä¸ºç©º,è¯·æ£€æŸ¥å‹ç¼©æ–‡ä»¶å"), _T("é¸­ä¸€å‹"), MB_OK | MB_TASKMODAL);
 				break;
 			}
 			LPTSTR fileNameStr = new TCHAR[length + 1];
 			GetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileNameStr,length + 1);
-			//½âÎöÎª¾ø¶ÔÂ·¾¶
+			//è§£æä¸ºç»å¯¹è·¯å¾„
 			path fileName = absolute(fileNameStr);
-			//ÉèÖÃ±à¼­¿òÎÄ±¾
+			//è®¾ç½®ç¼–è¾‘æ¡†æ–‡æœ¬
 			SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileName.c_str());
 			if (!exists(fileName.root_path())) {	
-				MessageBox(hwnd_WndProc, _T("ÎÄ¼şÂ·¾¶ÖĞ¸ùÄ¿Â¼²»´æÔÚ,ÇëĞŞ¸ÄÑ¹ËõÎÄ¼şÂ·¾¶"), _T("Ñ¼Ò»Ñ¹"), MB_OK | MB_TASKMODAL);
+				MessageBox(hwnd_WndProc, _T("æ–‡ä»¶è·¯å¾„ä¸­æ ¹ç›®å½•ä¸å­˜åœ¨,è¯·ä¿®æ”¹å‹ç¼©æ–‡ä»¶è·¯å¾„"), _T("é¸­ä¸€å‹"), MB_OK | MB_TASKMODAL);
 				break;
 			}
 			if (!exists(fileName.parent_path())||!is_directory(fileName.parent_path())) {
-				if (MessageBox(hwnd_WndProc, (_T("Ö¸¶¨µÄ¸¸¼¶ÎÄ¼ş¼Ğ²»´æÔÚ,ÊÇ·ñĞÂ½¨ÎÄ¼ş¼Ğ?\n-") + fileName.parent_path().native()).c_str(), _T("Ñ¼Ò»Ñ¹"), MB_YESNO | MB_TASKMODAL) == IDYES) {
+				if (MessageBox(hwnd_WndProc, (_T("æŒ‡å®šçš„çˆ¶çº§æ–‡ä»¶å¤¹ä¸å­˜åœ¨,æ˜¯å¦æ–°å»ºæ–‡ä»¶å¤¹?\n-") + fileName.parent_path().native()).c_str(), _T("é¸­ä¸€å‹"), MB_YESNO | MB_TASKMODAL) == IDYES) {
 					create_directories(fileName.parent_path());
 				}
 				else break;
 			}
-			if (MessageBox(hwnd_WndProc, (_T("ÊÇ·ñÈ·¶¨½«ËùÑ¡ÎÄ¼ş(ÎÄ¼ş¼Ğ)Ñ¹Ëõµ½µ±Ç°Â·¾¶?\n-") + fileName.native()).c_str(),_T("Ñ¼Ò»Ñ¹") ,MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
+			if (MessageBox(hwnd_WndProc, (_T("æ˜¯å¦ç¡®å®šå°†æ‰€é€‰æ–‡ä»¶(æ–‡ä»¶å¤¹)å‹ç¼©åˆ°å½“å‰è·¯å¾„?\n-") + fileName.native()).c_str(),_T("é¸­ä¸€å‹") ,MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
 				break;
 			}
 			zipFileName = fileName;
-			//¿ªÊ¼Ñ¹Ëõ
+			//å¼€å§‹å‹ç¼©
 			StartZip();
-			DestroyWindow(hwnd_WndProc);//Ïú»Ù´°¿Ú²¢·¢ËÍWM_DESTROYÏûÏ¢
+			DestroyWindow(hwnd_WndProc);//é”€æ¯çª—å£å¹¶å‘é€WM_DESTROYæ¶ˆæ¯
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonCancelID:{
-			DestroyWindow(hwnd_WndProc);//Ïú»Ù´°¿Ú²¢·¢ËÍWM_DESTROYÏûÏ¢
+			DestroyWindow(hwnd_WndProc);//é”€æ¯çª—å£å¹¶å‘é€WM_DESTROYæ¶ˆæ¯
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonBrowseID: {
-			//³õÊ¼»¯×ÊÔ´
+			//åˆå§‹åŒ–èµ„æº
 			HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 			IFileSaveDialog* fileSaveDialog = nullptr;
-			//´´½¨¶Ô»°¿òÊµÀı
+			//åˆ›å»ºå¯¹è¯æ¡†å®ä¾‹
 			hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileSaveDialog));
 			if (!SUCCEEDED(hr))break;
-			//ÉèÖÃÄ¬ÈÏÎÄ¼şÃû
-			fileSaveDialog->SetFileName(L"ĞÂ½¨Ñ¹Ëõ°ü");
-			//ÉèÖÃÎÄ¼şºó×º
-			COMDLG_FILTERSPEC rgSpec[] = { { L"Ñ¹Ëõ°üÎÄ¼ş (*.ya)", L"*.ya" }};
+			//è®¾ç½®é»˜è®¤æ–‡ä»¶å
+			fileSaveDialog->SetFileName(L"æ–°å»ºå‹ç¼©åŒ…");
+			//è®¾ç½®æ–‡ä»¶åç¼€
+			COMDLG_FILTERSPEC rgSpec[] = { { L"å‹ç¼©åŒ…æ–‡ä»¶ (*.ya)", L"*.ya" }};
             fileSaveDialog->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
 			fileSaveDialog->SetDefaultExtension(L"ya");
-			//ÅäÖÃÎÄ¼ş¶Ô»°¿òÑ¡Ïî
+			//é…ç½®æ–‡ä»¶å¯¹è¯æ¡†é€‰é¡¹
 			//DWORD dword;
 			//hr = fileSaveDialog->GetOptions(&dword);
 			//hr = fileSaveDialog->SetOptions(dword);
-      		//ÏÔÊ¾¶Ô»°¿ò
+      		//æ˜¾ç¤ºå¯¹è¯æ¡†
 			hr = fileSaveDialog->Show(hwnd_WndProc);
-            //»ñÈ¡ÓÃ»§Ñ¡Ôñ½á¹û
+            //è·å–ç”¨æˆ·é€‰æ‹©ç»“æœ
             IShellItem* selectedItem = nullptr;
 			hr = fileSaveDialog->GetResult(&selectedItem);
 			if (!SUCCEEDED(hr))break;
 			LPWSTR filePath = nullptr;
-			//»ñÈ¡ÎÄ¼ş¼ĞÂ·¾¶
+			//è·å–æ–‡ä»¶å¤¹è·¯å¾„
 			selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-			//ÉèÖÃ±à¼­¿òÎÄ±¾
+			//è®¾ç½®ç¼–è¾‘æ¡†æ–‡æœ¬
 			SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), filePath);
-			//Ïú»Ù×ÊÔ´
+			//é”€æ¯èµ„æº
 			selectedItem->Release();
 			CoTaskMemFree(filePath);
 			fileSaveDialog->Release();
@@ -289,7 +289,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 		}
 	}
 	else {
-		//ÆäËûÎ´´¦ÀíµÄÏûÏ¢Ê¹ÓÃÄ¬ÈÏ´°¿Ú¹ı³Ì´¦Àí
+		//å…¶ä»–æœªå¤„ç†çš„æ¶ˆæ¯ä½¿ç”¨é»˜è®¤çª—å£è¿‡ç¨‹å¤„ç†
 		return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 	}
 	return 0;
@@ -297,19 +297,19 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 
 LRESULT ZipFunc::WM_NOTIFY_WndProc()
 {	
-	//»ñÈ¡ÏûÏ¢Ğ¯´øµÄĞÅÏ¢
+	//è·å–æ¶ˆæ¯æºå¸¦çš„ä¿¡æ¯
 	LPNMHDR lpnmhdr = (LPNMHDR)lParam_WndProc;
-	//À´×ÔÑ¹ËõÎÄ¼şÃû³Æ±à¼­¿òµÄÏûÏ¢
+	//æ¥è‡ªå‹ç¼©æ–‡ä»¶åç§°ç¼–è¾‘æ¡†çš„æ¶ˆæ¯
 	if (lpnmhdr->idFrom == (UINT)ZipFuncWndChildID::editFileNameID){
-		//ÅĞ¶ÏÍ¨Öª´úÂë
+		//åˆ¤æ–­é€šçŸ¥ä»£ç 
 		switch (lpnmhdr->code) {
-			case NM_CLICK:case NM_RETURN:{//µ¥»÷
+			case NM_CLICK:case NM_RETURN:{//å•å‡»
 				
 			}
 		}
 	}
 	else {
-		//ÆäËûÎ´´¦ÀíµÄÏûÏ¢Ê¹ÓÃÄ¬ÈÏ´°¿Ú¹ı³Ì´¦Àí
+		//å…¶ä»–æœªå¤„ç†çš„æ¶ˆæ¯ä½¿ç”¨é»˜è®¤çª—å£è¿‡ç¨‹å¤„ç†
 		return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 	}
 	return 0;
@@ -319,10 +319,10 @@ LRESULT ZipFunc::WM_PAINT_WndProc(){
 	PAINTSTRUCT ps;
 	HDC hdc = BeginPaint(hwnd_WndProc, &ps);
 	SelectObject(hdc, lTSObject[0]);
-	//SetTextColor(hdc, RGB(46, 134, 193));//ÎÄ×ÖÇ°¾°É«
-	TextOut(hdc, 20, 430, _T("Ñ¹ËõÎÄ¼şÉèÖÃ"), wcslen(_T("Ñ¹ËõÎÄ¼şÉèÖÃ")));
-	TextOut(hdc, 20, 480, _T("ÎÄ¼şÃû"), wcslen(_T("ÎÄ¼şÃû")));
-	TextOut(hdc, 20, 530, _T("Ñ¹Ëõ¸ñÊ½        .ya"), wcslen(_T("Ñ¹Ëõ¸ñÊ½        .ya")));
+	//SetTextColor(hdc, RGB(46, 134, 193));//æ–‡å­—å‰æ™¯è‰²
+	TextOut(hdc, 20, 430, _T("å‹ç¼©æ–‡ä»¶è®¾ç½®"), wcslen(_T("å‹ç¼©æ–‡ä»¶è®¾ç½®")));
+	TextOut(hdc, 20, 480, _T("æ–‡ä»¶å"), wcslen(_T("æ–‡ä»¶å")));
+	TextOut(hdc, 20, 530, _T("å‹ç¼©æ ¼å¼        .ya"), wcslen(_T("å‹ç¼©æ ¼å¼        .ya")));
 	POINT points1[2] = { {20,425},{965,425} };
 	Polyline(hdc, points1, 2);
 	POINT points2[2] = { {20,555},{965,555} };
@@ -332,96 +332,96 @@ LRESULT ZipFunc::WM_PAINT_WndProc(){
 }
 
 LRESULT ZipFunc::WM_CREATE_WndProc(){
-	//³õÊ¼»¯ÎÄ¼şÁĞ±íÊı×é
+	//åˆå§‹åŒ–æ–‡ä»¶åˆ—è¡¨æ•°ç»„
 	vector<path> temptemp;
 	filePathArr.swap(temptemp);
-	//´´½¨×ÖÌå
+	//åˆ›å»ºå­—ä½“
 	lTSObject[0] = CreateFont(
 		20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-		DEFAULT_PITCH | FF_SWISS, _T("¿¬Ìå")); // ´´½¨Ò»¸ö ¿¬Ìå ×ÖÌå£¬20px ´óĞ¡
-	//´´½¨°´Å¥
+		DEFAULT_PITCH | FF_SWISS, _T("æ¥·ä½“")); // åˆ›å»ºä¸€ä¸ª æ¥·ä½“ å­—ä½“ï¼Œ20px å¤§å°
+	//åˆ›å»ºæŒ‰é’®
 	CreateWindowEx(
-		0, WC_BUTTON, _T("Ìí¼ÓÎÄ¼ş"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("æ·»åŠ æ–‡ä»¶"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		605, 380, 100, 40,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonSelectFileID), hInstance, this
 	);
 	CreateWindowEx(
-		0, WC_BUTTON, _T("Ìí¼ÓÎÄ¼ş¼Ğ"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("æ·»åŠ æ–‡ä»¶å¤¹"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		725, 380, 120, 40,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonSelectFolderID), hInstance, this
 	);
 	CreateWindowEx(
-		0, WC_BUTTON, _T("É¾³ı"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("åˆ é™¤"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		865, 380, 100, 40,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonDeleteID), hInstance, this
 	);
 	CreateWindowEx(
-		0, WC_BUTTON, _T("¿ªÊ¼Ñ¹Ëõ"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("å¼€å§‹å‹ç¼©"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		745, 560 ,100 ,40 ,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonStartID), hInstance, this
 	);
 	CreateWindowEx(
-		0, WC_BUTTON, _T("È¡Ïû"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("å–æ¶ˆ"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		865, 560, 100, 40,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonCancelID), hInstance, this
 	);
 	CreateWindowEx(
-		0, WC_BUTTON, _T("ä¯ÀÀ"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
+		0, WC_BUTTON, _T("æµè§ˆ"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
 		865, 475, 100, 30,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::buttonBrowseID), hInstance, this
 	);
-	//ÉèÖÃ×ÖÌå
+	//è®¾ç½®å­—ä½“
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonSelectFileID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonSelectFolderID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonDeleteID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonStartID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonCancelID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::buttonBrowseID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
-	//´´½¨±à¼­¿ò
+	//åˆ›å»ºç¼–è¾‘æ¡†
 	CreateWindowEx(
-		WS_EX_CLIENTEDGE, WC_EDIT,(current_path().native() + _T("\\ĞÂ½¨Ñ¹Ëõ°ü") + _T(SUFFIX)).c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | WS_TABSTOP,
+		WS_EX_CLIENTEDGE, WC_EDIT,(current_path().native() + _T("\\æ–°å»ºå‹ç¼©åŒ…") + _T(SUFFIX)).c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | WS_TABSTOP,
 		100,475,740,30,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::editFileNameID), hInstance, this
 	);
-	//ÉèÖÃ±à¼­¿Ø¼şÖĞµÄÎÄ±¾ÌáÊ¾
-	Edit_SetCueBannerText(GetDlgItem(hwnd_WndProc,(int)ZipFuncWndChildID::editFileNameID), _T("ÇëÑ¡ÔñÑ¹ËõÎÄ¼şÂ·¾¶²¢Éè¶¨Ñ¹ËõÎÄ¼şÃû"));
+	//è®¾ç½®ç¼–è¾‘æ§ä»¶ä¸­çš„æ–‡æœ¬æç¤º
+	Edit_SetCueBannerText(GetDlgItem(hwnd_WndProc,(int)ZipFuncWndChildID::editFileNameID), _T("è¯·é€‰æ‹©å‹ç¼©æ–‡ä»¶è·¯å¾„å¹¶è®¾å®šå‹ç¼©æ–‡ä»¶å"));
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
-	//´´½¨ÒÑÑ¡ÔñÎÄ¼şÁĞ±í
+	//åˆ›å»ºå·²é€‰æ‹©æ–‡ä»¶åˆ—è¡¨
 	HWND selectedFileListHwnd = CreateWindowEx(
-		0, WC_LISTVIEW, _T("ÒÑÑ¡ÔñµÄÎÄ¼ş"), WS_CHILD | WS_VISIBLE |WS_BORDER | LVS_REPORT | LVS_SHOWSELALWAYS,
+		0, WC_LISTVIEW, _T("å·²é€‰æ‹©çš„æ–‡ä»¶"), WS_CHILD | WS_VISIBLE |WS_BORDER | LVS_REPORT | LVS_SHOWSELALWAYS,
 		20, 20, 945, 350,
 		hwnd_WndProc, HMENU(ZipFuncWndChildID::selectedFileListID), hInstance, this
 	);
-	if (!selectedFileListHwnd)ErrorMessageBox(hwnd_WndProc, _T("´´½¨ÎÄ¼şÁĞ±í¿òselectedFileListÊ§°Ü"));
-	//ÉèÖÃÀ©Õ¹ÑùÊ½
+	if (!selectedFileListHwnd)ErrorMessageBox(hwnd_WndProc, _T("åˆ›å»ºæ–‡ä»¶åˆ—è¡¨æ¡†selectedFileListå¤±è´¥"));
+	//è®¾ç½®æ‰©å±•æ ·å¼
 	ListView_SetExtendedListViewStyle(selectedFileListHwnd, LVS_EX_COLUMNSNAPPOINTS | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
-	//²åÈëÁĞ
+	//æ’å…¥åˆ—
 	LVCOLUMN column = { 0 };
 	column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM | LVCF_MINWIDTH;
 	column.cx = 260;
-	column.pszText = (LPTSTR)_T("Ãû³Æ");
+	column.pszText = (LPTSTR)_T("åç§°");
 	column.iSubItem = (int)selectedFileListColumnID::columnNameID;
 	column.cxMin = 260;
 	ListView_InsertColumn(selectedFileListHwnd, selectedFileListColumnID::columnNameID, &column);
 
 	column.fmt = LVCFMT_LEFT;
 	column.cx = 90;
-	column.pszText = (LPTSTR)_T("ÀàĞÍ");
+	column.pszText = (LPTSTR)_T("ç±»å‹");
 	column.iSubItem = (int)selectedFileListColumnID::columnTypeID;
 	column.cxMin = 90;
 	ListView_InsertColumn(selectedFileListHwnd, selectedFileListColumnID::columnTypeID, &column);
 
 	column.fmt = LVCFMT_LEFT;
 	column.cx = 100;
-	column.pszText = (LPTSTR)_T("´óĞ¡");
+	column.pszText = (LPTSTR)_T("å¤§å°");
 	column.iSubItem = (int)selectedFileListColumnID::columnSizeID;
 	column.cxMin = 100;
 	ListView_InsertColumn(selectedFileListHwnd, selectedFileListColumnID::columnSizeID, &column);
 
 	column.fmt = LVCFMT_LEFT; 
 	column.cx = 440;
-	column.pszText = (LPTSTR)_T("ÎÄ¼şÂ·¾¶");
+	column.pszText = (LPTSTR)_T("æ–‡ä»¶è·¯å¾„");
 	column.iSubItem = (int)selectedFileListColumnID::columnPathID;
 	column.cxMin = 440;
 	ListView_InsertColumn(selectedFileListHwnd, selectedFileListColumnID::columnPathID, &column);
@@ -430,13 +430,13 @@ LRESULT ZipFunc::WM_CREATE_WndProc(){
 
 LRESULT ZipFunc::WM_CLOSE_WndProc()
 {
-	DestroyWindow(hwnd_WndProc);//Ïú»Ù´°¿Ú²¢·¢ËÍWM_DESTROYÏûÏ¢
+	DestroyWindow(hwnd_WndProc);//é”€æ¯çª—å£å¹¶å‘é€WM_DESTROYæ¶ˆæ¯
 	return 0;
 }
 
 LRESULT ZipFunc::WM_DESTROY_WndProc()
 {
-	PostQuitMessage(0);//·¢²¼WM_QUITÏûÏ¢
+	PostQuitMessage(0);//å‘å¸ƒWM_QUITæ¶ˆæ¯
 	return 0;
 }
 

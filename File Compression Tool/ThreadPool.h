@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include<vector>
 #include<queue>
 #include<condition_variable>
@@ -10,101 +10,101 @@
 
 class ThreadPool {
 private:
-	std::vector<std::thread> workThreads;//¹¤×÷Ïß³ÌÈİÆ÷
-	std::queue<std::function<void()>> taskQueue;//ÈÎÎñ¶ÓÁĞ
-	std::mutex queue_mutex;//ÈÎÎñ¶ÓÁĞµÄ»¥³âËø
-	std::condition_variable condition;//Ìõ¼ş±äÁ¿£¬ÓÃÓÚÍ¨ÖªÏß³Ì½ÓÊÕÈÎÎñ
-	std::atomic<bool> isRunning;//Ïß³Ì³ØÔËĞĞ×´Ì¬
+	std::vector<std::thread> workThreads;//å·¥ä½œçº¿ç¨‹å®¹å™¨
+	std::queue<std::function<void()>> taskQueue;//ä»»åŠ¡é˜Ÿåˆ—
+	std::mutex queue_mutex;//ä»»åŠ¡é˜Ÿåˆ—çš„äº’æ–¥é”
+	std::condition_variable condition;//æ¡ä»¶å˜é‡ï¼Œç”¨äºé€šçŸ¥çº¿ç¨‹æ¥æ”¶ä»»åŠ¡
+	std::atomic<bool> isRunning;//çº¿ç¨‹æ± è¿è¡ŒçŠ¶æ€
 
-	//½ûÖ¹¿½±´¹¹ÔìºÍ¸³Öµ²Ù×÷
+	//ç¦æ­¢æ‹·è´æ„é€ å’Œèµ‹å€¼æ“ä½œ
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
 
 public:
-	//Îö¹¹º¯Êı£¬×Ô¶¯Í£Ö¹Ïß³Ì³Ø
+	//ææ„å‡½æ•°ï¼Œè‡ªåŠ¨åœæ­¢çº¿ç¨‹æ± 
 	~ThreadPool() {
 		shutdown();
 	}
-	//¹¹Ôìº¯Êı£¬³õÊ¼»¯Ïß³Ì³Ø£¬Í¬Ê±Ê¹ÓÃexplicit½ûÖ¹ÒşÊ½ÀàĞÍ×ª»»
+	//æ„é€ å‡½æ•°ï¼Œåˆå§‹åŒ–çº¿ç¨‹æ± ï¼ŒåŒæ—¶ä½¿ç”¨explicitç¦æ­¢éšå¼ç±»å‹è½¬æ¢
 	explicit ThreadPool(size_t thread_count): isRunning(true) {
-		// ´´½¨Ö¸¶¨ÊıÁ¿µÄÏß³Ì
+		// åˆ›å»ºæŒ‡å®šæ•°é‡çš„çº¿ç¨‹
 		for (size_t i = 0; i < thread_count; ++i) {
 			workThreads.emplace_back([this] {
-				// Ã¿¸öÏß³ÌµÄ¹¤×÷º¯Êı
+				// æ¯ä¸ªçº¿ç¨‹çš„å·¥ä½œå‡½æ•°
 				while (true) {
-					std::function<void()> task; // ÓÃÓÚ´æ´¢È¡³öµÄÈÎÎñ
-					{ // ½øÈëÁÙ½çÇø£¬±£»¤ÈÎÎñ¶ÓÁĞ
+					std::function<void()> task; // ç”¨äºå­˜å‚¨å–å‡ºçš„ä»»åŠ¡
+					{ // è¿›å…¥ä¸´ç•ŒåŒºï¼Œä¿æŠ¤ä»»åŠ¡é˜Ÿåˆ—
 						std::unique_lock<std::mutex> lock(queue_mutex);
-						// µÈ´ıÈÎÎñ»òÏß³Ì³ØÍ£Ö¹ĞÅºÅ
+						// ç­‰å¾…ä»»åŠ¡æˆ–çº¿ç¨‹æ± åœæ­¢ä¿¡å·
 						condition.wait(lock, [this] {
 							return !isRunning || !taskQueue.empty();
 							});
-						// Èç¹ûÏß³Ì³ØÍ£Ö¹ÇÒÃ»ÓĞÈÎÎñ£¬ÍË³öÏß³Ì
+						// å¦‚æœçº¿ç¨‹æ± åœæ­¢ä¸”æ²¡æœ‰ä»»åŠ¡ï¼Œé€€å‡ºçº¿ç¨‹
 						if (!isRunning && taskQueue.empty())
 							return;
-						// ´Ó¶ÓÁĞÖĞÈ¡³öÈÎÎñ
+						// ä»é˜Ÿåˆ—ä¸­å–å‡ºä»»åŠ¡
 						task = std::move(taskQueue.front());
 						taskQueue.pop();
 					}
-					// Ö´ĞĞÈÎÎñ
+					// æ‰§è¡Œä»»åŠ¡
 					task();
 				}
 				});
 		}
 	}
-	// Ìá½»ÈÎÎñµ½Ïß³Ì³Ø
+	// æäº¤ä»»åŠ¡åˆ°çº¿ç¨‹æ± 
 	template <class F, class... Args>
 	auto submit(F&& f, Args&&... args)-> std::future<std::invoke_result_t<F, Args...>> 
-	{//Ê¹ÓÃÎ²ÖÃ·µ»ØÀàĞÍºÍ×Ô¶¯ÍÆµ¼º¯Êı·µ»ØÀàĞÍ
+	{//ä½¿ç”¨å°¾ç½®è¿”å›ç±»å‹å’Œè‡ªåŠ¨æ¨å¯¼å‡½æ•°è¿”å›ç±»å‹
 		using ReturnType = std::invoke_result_t<F, Args...>;
-		// ½«ÈÎÎñ·â×°ÎªÒ»¸ö¿Éµ÷ÓÃµÄstd::function¶ÔÏó
+		// å°†ä»»åŠ¡å°è£…ä¸ºä¸€ä¸ªå¯è°ƒç”¨çš„std::functionå¯¹è±¡
 		auto task = std::make_shared<std::packaged_task<ReturnType()>>(
 			std::bind(std::forward<F>(f), std::forward<Args>(args)...)
 		);
 
-		std::future<ReturnType> result = task->get_future(); // »ñÈ¡ÈÎÎñ·µ»ØÖµµÄfuture
-		{ // ½øÈëÁÙ½çÇø£¬±£»¤ÈÎÎñ¶ÓÁĞ
+		std::future<ReturnType> result = task->get_future(); // è·å–ä»»åŠ¡è¿”å›å€¼çš„future
+		{ // è¿›å…¥ä¸´ç•ŒåŒºï¼Œä¿æŠ¤ä»»åŠ¡é˜Ÿåˆ—
 			std::unique_lock<std::mutex> lock(queue_mutex);
-			// Èç¹ûÏß³Ì³ØÒÑ¾­Í£Ö¹£¬Å×³öÒì³£
+			// å¦‚æœçº¿ç¨‹æ± å·²ç»åœæ­¢ï¼ŒæŠ›å‡ºå¼‚å¸¸
 			if (!isRunning)
 				throw std::runtime_error("ThreadPool has stopped");
-			// ½«ÈÎÎñ¼ÓÈë¶ÓÁĞ
+			// å°†ä»»åŠ¡åŠ å…¥é˜Ÿåˆ—
 			taskQueue.emplace([task]() { (*task)(); });
 		}
-		// Í¨ÖªÒ»¸öÏß³ÌÓĞĞÂÈÎÎñ
+		// é€šçŸ¥ä¸€ä¸ªçº¿ç¨‹æœ‰æ–°ä»»åŠ¡
 		condition.notify_one();
-		return result; // ·µ»Øfuture¶ÔÏó
+		return result; // è¿”å›futureå¯¹è±¡
 	}
-	// Í£Ö¹Ïß³Ì³Ø²¢µÈ´ıËùÓĞÏß³ÌÍê³É
+	// åœæ­¢çº¿ç¨‹æ± å¹¶ç­‰å¾…æ‰€æœ‰çº¿ç¨‹å®Œæˆ
 	void shutdown() {
-		{ // ĞŞ¸ÄÔËĞĞ±êÖ¾£¬Í¨ÖªËùÓĞÏß³Ì
+		{ // ä¿®æ”¹è¿è¡Œæ ‡å¿—ï¼Œé€šçŸ¥æ‰€æœ‰çº¿ç¨‹
 			std::unique_lock<std::mutex> lock(queue_mutex);
 			isRunning = false;
 		}
-		condition.notify_all(); // »½ĞÑËùÓĞÏß³Ì
+		condition.notify_all(); // å”¤é†’æ‰€æœ‰çº¿ç¨‹
 		for (std::thread& worker : workThreads) {
 			if (worker.joinable())
-				worker.join(); // µÈ´ıÏß³Ì½áÊø
+				worker.join(); // ç­‰å¾…çº¿ç¨‹ç»“æŸ
 		}
 	}
 };
 
 int main() {
-	ThreadPool pool(4); // ´´½¨Ïß³Ì³Ø£¬°üº¬4¸öÏß³Ì
+	ThreadPool pool(4); // åˆ›å»ºçº¿ç¨‹æ± ï¼ŒåŒ…å«4ä¸ªçº¿ç¨‹
 
-	// Ìá½»ÈÎÎñµ½Ïß³Ì³Ø
+	// æäº¤ä»»åŠ¡åˆ°çº¿ç¨‹æ± 
 	auto future1 = pool.submit([](int a, int b) {
 		return a + b;
 		}, 5, 10);
 
 	auto future2 = pool.submit([] {
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		return std::string("ÈÎÎñÍê³É");
+		return std::string("ä»»åŠ¡å®Œæˆ");
 		});
 
-	// »ñÈ¡ÈÎÎñ½á¹û
-	/*std::cout << "ÈÎÎñ1½á¹û: " << future1.get() << std::endl;
-	std::cout << "ÈÎÎñ2½á¹û: " << future2.get() << std::endl;*/
+	// è·å–ä»»åŠ¡ç»“æœ
+	/*std::cout << "ä»»åŠ¡1ç»“æœ: " << future1.get() << std::endl;
+	std::cout << "ä»»åŠ¡2ç»“æœ: " << future2.get() << std::endl;*/
 
-	return 0; // Ö÷Ïß³ÌÍË³öÊ±£¬Ïß³Ì³Ø×Ô¶¯Í£Ö¹
+	return 0; // ä¸»çº¿ç¨‹é€€å‡ºæ—¶ï¼Œçº¿ç¨‹æ± è‡ªåŠ¨åœæ­¢
 }
