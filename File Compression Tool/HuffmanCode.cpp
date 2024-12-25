@@ -8,7 +8,7 @@ void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t file
 	//创建临时变量用于多线程
 	unordered_map<BYTE, size_t>* symbolfrequency = new unordered_map<BYTE, size_t>;
 	//进行文件映射
-	FileService::MapFileReader(*mapFileInfo);
+	FileService::MapFile(*mapFileInfo);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
 	//文件指针逐字节遍历整个映射的区域
@@ -16,12 +16,11 @@ void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t file
 		//符号对应的频率增加
 		++(*symbolfrequency)[filePointer[x]];
 	}
-	//上锁
-	selectedFile.threadLock->lock();
-	//将局部统计的 符号-频率表 合并到文件信息中
-	MergeSymbolFrequency(selectedFile.symbolFrequency, *symbolfrequency);
-	//解锁
-	selectedFile.threadLock->unlock();
+	{//上锁
+		std::lock_guard<std::mutex> lock(*selectedFile.threadLock);
+		//将局部统计的 符号-频率表 合并到文件信息中
+		MergeSymbolFrequency(selectedFile.symbolFrequency, *symbolfrequency);
+	}//自动解锁
 	delete mapFileInfo;
 	delete symbolfrequency;
 }
@@ -157,5 +156,6 @@ void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unor
 		lastLength = codeLength[i].second;
 		symbolCode[codeLength[i].first] = lastCode;
 	}
+
 }
 

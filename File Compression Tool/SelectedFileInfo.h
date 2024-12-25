@@ -21,8 +21,28 @@ struct SelectedFileInfo {
 	//压缩后文件大小(字节)，以及填补的比特数(bit)
 	pair<uintmax_t, BYTE> WPL_Size;
 	//线程锁,保护共享数据
-	std::mutex* threadLock = new std::mutex;
+	unique_ptr<std::mutex> threadLock;
 	//构造函数
-	SelectedFileInfo(const path& name,const path& filepath, bool isfolder, uintmax_t oldfilesize) :fileName(name), filePath(filepath), isFolder(isfolder), oldFileSize(oldfilesize), WPL_Size(0, 0) {}
-	~SelectedFileInfo() { delete threadLock; }
+	SelectedFileInfo(const path& name,const path& filepath, bool isfolder, uintmax_t oldfilesize) :fileName(name), filePath(filepath), isFolder(isfolder), oldFileSize(oldfilesize), WPL_Size(0, 0),threadLock(std::make_unique<std::mutex>()){}
+	//mutex互斥锁无法复制和移动,使用unique_ptr智能指针包装可以移动
+	//移动构造函数
+	SelectedFileInfo(SelectedFileInfo&& selectedFileInfo) noexcept
+		: fileName(move(selectedFileInfo.fileName)), filePath(move(selectedFileInfo.filePath)), isFolder(selectedFileInfo.isFolder), oldFileSize(selectedFileInfo.oldFileSize),
+		symbolFrequency(move(selectedFileInfo.symbolFrequency)), WPL_Size(selectedFileInfo.WPL_Size),threadLock(move(selectedFileInfo.threadLock)){}
+	//移动赋值运算符
+	SelectedFileInfo& operator=(SelectedFileInfo&& selectedFileInfo) noexcept {
+		if (this != &selectedFileInfo) {
+			fileName = move(selectedFileInfo.fileName);
+			filePath = move(selectedFileInfo.filePath);
+			isFolder = selectedFileInfo.isFolder;
+			oldFileSize = selectedFileInfo.oldFileSize;
+			symbolFrequency = move(selectedFileInfo.symbolFrequency);
+			WPL_Size = selectedFileInfo.WPL_Size;
+			threadLock = move(selectedFileInfo.threadLock);
+		}
+		return *this;
+	}
+	//禁止拷贝构造和赋值操作
+	SelectedFileInfo(const SelectedFileInfo&) = delete;
+	SelectedFileInfo& operator=(const SelectedFileInfo&) = delete;
 };

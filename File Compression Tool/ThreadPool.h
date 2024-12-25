@@ -2,6 +2,9 @@
 #include<vector>
 #include<queue>
 #include<future>
+#include <windows.h>
+#include <tchar.h>
+//#include <windows.h>
 //#include<thread>
 //#include<mutex>
 //#include<atomic>
@@ -42,6 +45,23 @@ class ThreadPool {
 	ThreadPool& operator=(const ThreadPool&) = delete;
 
 public:
+	void ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode = true)
+	{
+		//创建字符串用于接收错误代码
+		TCHAR errorCode[20] = _T("");
+		if (showErrorCode) _stprintf_s(errorCode, _T("\n错误代码:%lu"), GetLastError());
+		//将msg内容与错误代码拼接起来
+		size_t length = _tcslen(msg) + _tcslen(errorCode) + 1;
+		TCHAR* finalMsg = new TCHAR[length];
+		_stprintf_s(finalMsg, length, _T("%s%s"), msg, errorCode);
+		//弹出错误弹窗
+		MessageBox(hwnd, finalMsg, _T("错误信息"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
+		//销毁使用new开辟的空间
+		delete[]finalMsg;
+		//退出程序
+		exit(GetLastError());
+	}
+
 	//析构函数，自动停止线程池
 	~ThreadPool() {	ShutDownThreadPool();}
 	//线程循环
@@ -54,8 +74,7 @@ public:
 		for (size_t i = 0; i < threadAmount; ++i) {
 			currentThreadInfo = &workThreads.emplace_back(nullptr, false, 0, this);
 			//使线程与线程信息互相关联建立联系
-			std::thread tempthread(&ThreadPool::ThreadLoop,this,currentThreadInfo);
-			currentThreadInfo->mThread = &tempthread;
+			currentThreadInfo->mThread = new std::thread(&ThreadPool::ThreadLoop,this,currentThreadInfo);
 		}
 	}
 	// 提交任务到线程池

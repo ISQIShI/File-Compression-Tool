@@ -72,6 +72,9 @@
     <ClInclude Include="SelectedFileInfo.h">
       <Filter>Entity</Filter>
     </ClInclude>
+    <ClInclude Include="ZipFileInfo.h">
+      <Filter>Entity</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ToDo.md" />

@@ -17,6 +17,10 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 			threadinfo->taskID = taskQueue.front().taskID;
 			taskQueue.pop();
 		}
+		if (!task) {
+			ErrorMessageBox(NULL, _T("线程池异常退出"));
+			continue;
+		}
 		//执行任务
 		threadinfo->isWorking = true;
 		task();
@@ -29,14 +33,16 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 
 void ThreadPool::ShutDownThreadPool()
 {
-	{ // 修改运行标志，通知所有线程
+	{//修改运行标志，通知所有线程
 		std::unique_lock<std::mutex> lock(queueMutex);
 		isRunning = false;
 	}
 	threadWaitTask.notify_all(); // 唤醒所有线程
 	for (auto& worker : workThreads) {
-		if (worker.mThread->joinable())
+		if (worker.mThread && worker.mThread->joinable()) {
 			worker.mThread->join(); // 等待线程结束
+			delete worker.mThread;
+		}
 	}
 }
 

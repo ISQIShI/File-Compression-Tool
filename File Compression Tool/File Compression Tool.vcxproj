@@ -152,6 +152,7 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MainWnd.h" />
     <ClInclude Include="MyWnds.h" />
+    <ClInclude Include="ZipFileInfo.h" />
     <ClInclude Include="ZipFunc.h" />
   </ItemGroup>
   <ItemGroup>

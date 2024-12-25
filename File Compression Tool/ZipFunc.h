@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include"MainWnd.h"
 #include "SelectedFileInfo.h"
+#include "ZipFileInfo.h"
 #include<filesystem>
 #include<vector>
-
 using namespace std;
 using namespace filesystem;
 
@@ -27,8 +27,8 @@ enum class selectedFileListColumnID :unsigned char {
 class ZipFunc :public MyWnds{
 	//存储选择的文件信息
 	vector<SelectedFileInfo>* selectedFileArr =new vector<SelectedFileInfo>;
-	//存储压缩包的路径
-	path zipFilePath;
+	//存储压缩包的信息
+	ZipFileInfo zipFile;
 	//--------------------------执行压缩功能的函数----------------------------
 	void StartZip(bool openMultiThread = false);
 

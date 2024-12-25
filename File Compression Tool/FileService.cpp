@@ -1,4 +1,18 @@
 ﻿#include"FileService.h"
+#include <mutex>
+
+//内存分配粒度
+SYSTEM_INFO system_info;
+void InitializeSystemInfo() {
+	GetSystemInfo(&system_info);
+}
+// 在程序开始时初始化 system_info
+struct SystemInfoInitializer {
+	SystemInfoInitializer() {
+		InitializeSystemInfo();
+	}
+} systemInfoInitializer;
+DWORD MapFileInfo::allocationGranularity = system_info.dwAllocationGranularity;
 
 void FileService::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode)
 {
@@ -17,23 +31,42 @@ void FileService::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showE
 	exit(GetLastError());
 }
 
-void FileService::MapFileReader(MapFileInfo& mapFileInfo)
+void FileService::MapFile(MapFileInfo& mapFileInfo, bool needAutoExtendFile)
 {
+	static std::mutex fileMapMutex;
 	//使用内存映射方式读取文件，提高文件读取速度
 	//打开文件以获取句柄
-	mapFileInfo.fileHandle = CreateFile(mapFileInfo.fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (mapFileInfo.fileHandle == INVALID_HANDLE_VALUE)ErrorMessageBox(NULL,_T("无法打开文件"));
+	mapFileInfo.fileHandle = CreateFile(mapFileInfo.fileName, GENERIC_WRITE|GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (mapFileInfo.fileHandle == INVALID_HANDLE_VALUE)	ErrorMessageBox(NULL,_T("无法打开文件"));
+	size_t aaa = file_size(mapFileInfo.fileName);
+	//当需要自动扩展文件且要映射的区域超过文件大小，自动扩展
+	if (needAutoExtendFile && ((mapFileInfo.fileOffset + mapFileInfo.fileMapSize) > file_size(mapFileInfo.fileName))) {
+		//设置文件指针
+		LARGE_INTEGER tempL_I;
+		tempL_I.QuadPart = mapFileInfo.fileOffset + mapFileInfo.fileMapSize;//偏移量
+		//上锁，保护文件指针线程安全
+		lock_guard<std::mutex> lock(fileMapMutex);
+		//二次判断,防止其他线程已经修改文件大小到满足当前线程需求
+		CloseHandle(mapFileInfo.fileHandle);
+		mapFileInfo.fileHandle = CreateFile(mapFileInfo.fileName, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (mapFileInfo.fileHandle == INVALID_HANDLE_VALUE)ErrorMessageBox(NULL, _T("重新打开文件失败"));
+		if (tempL_I.QuadPart > file_size(mapFileInfo.fileName)) {
+			if(!SetFilePointerEx(mapFileInfo.fileHandle, tempL_I, nullptr, FILE_BEGIN))ErrorMessageBox(NULL, _T("设置文件指针失败"));
+			if(!SetEndOfFile(mapFileInfo.fileHandle))ErrorMessageBox(NULL, _T("更新文件大小失败"));
+		}
+	}
 	//创建文件映射对象获取句柄
-	mapFileInfo.fileMapHandle = CreateFileMapping(mapFileInfo.fileHandle, nullptr, PAGE_READONLY, 0, 0, nullptr);
+	mapFileInfo.fileMapHandle = CreateFileMapping(mapFileInfo.fileHandle, nullptr, PAGE_READWRITE, 0, 0, nullptr);
 	if (mapFileInfo.fileMapHandle == NULL) {
         CloseHandle(mapFileInfo.fileHandle);
 		ErrorMessageBox(NULL, _T("无法创建文件映射对象"));
 	}
+	
 	//映射文件视图获取文件映射指针
-	mapFileInfo.mapViewPointer = MapViewOfFile(mapFileInfo.fileMapHandle, FILE_MAP_READ, (mapFileInfo.fileOffset >> 32) & 0xffffffff, mapFileInfo.fileOffset & 0xffffffff, mapFileInfo.fileMapSize);
+	mapFileInfo.mapViewPointer = MapViewOfFile(mapFileInfo.fileMapHandle, FILE_MAP_WRITE, (mapFileInfo.fileOffset >> 32) & 0xffffffff, mapFileInfo.fileOffset & 0xffffffff, mapFileInfo.fileMapSize);
 	if (mapFileInfo.mapViewPointer == NULL) {
+		CloseHandle(mapFileInfo.fileMapHandle);
         CloseHandle(mapFileInfo.fileHandle);
-        CloseHandle(mapFileInfo.fileMapHandle);
 		ErrorMessageBox(NULL, _T("无法映射文件视图"));
 	}
 	if (mapFileInfo.fileMapSize == 0) {
@@ -58,108 +91,82 @@ uintmax_t FileService::GetFileSize(const path& fileName)
 	return size;
 }
 
-void FileService::ZipFile(const path& sourceFile, const path& destFile, const unordered_map<BYTE, string>& symbolCode, size_t fileOffset, size_t fileMapSize)
+void FileService::ZipFile(const SelectedFileInfo& sourceFile,ZipFileInfo& targetFile, size_t sourceFileOffset, size_t sourceFileMapSize, size_t targetFileOffset, size_t targetFileMapSize)
 {
-	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)sourceFile.c_str(), fileOffset, fileMapSize);
+	//映射将要读取的源文件
+	MapFileInfo* mapSourceFileInfo = new MapFileInfo((LPTSTR)sourceFile.filePath.c_str(), sourceFileOffset, sourceFileMapSize);
 	//进行文件映射
-	FileService::MapFileReader(*mapFileInfo);
-	//获取文件指针
-	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
-	//打开压缩包文件
-	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (fileHandle == INVALID_HANDLE_VALUE) {
-		delete mapFileInfo;
-		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
-	}
-	//设置文件指针
-	LARGE_INTEGER tempL_I;
-	tempL_I.QuadPart = 0;
-	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
-	// 写入缓冲区
-	std::vector<BYTE> writeBuffer; // 写入缓冲区
-	size_t bufferCapacity = 4096; // 设置缓冲区大小
-	writeBuffer.reserve(bufferCapacity);
+	FileService::MapFile(*mapSourceFileInfo);
+	//获取文件映射指针
+	BYTE* sourceFilePointer = (BYTE*)mapSourceFileInfo->mapViewPointer;
+	//映射将要写入的目的文件
+	MapFileInfo* mapTargetFileInfo = new MapFileInfo((LPTSTR)targetFile.tempZipFilePath.c_str(), targetFileOffset, targetFileMapSize);
+	//进行文件映射
+	FileService::MapFile(*mapTargetFileInfo,true);
+	//获取文件映射指针
+	BYTE* targetFilePointer = (BYTE*)mapTargetFileInfo->mapViewPointer;
 
-	UINT currentWord = 0; // 当前 32 位数据块
-	int bitCount = 0;     // 当前数据块中已填充的位数
-
-	// 遍历文件映射区域
-	for (size_t i = 0; i < mapFileInfo->fileMapSize; ++i) {
-		const std::string& code = symbolCode.at(filePointer[i]);
-
-		// 将编码逐位填充到当前数据块
+	BYTE buffer = 0;
+	BYTE bitCount = 0;
+	for (size_t reader = 0; reader < mapSourceFileInfo->fileMapSize; ++reader,++sourceFilePointer) {
+		//读取当前源文件指针所指向字节，并获得对应的编码
+		const std::string& code = targetFile.symbolCode.at(*sourceFilePointer);
 		for (char bit : code) {
-			currentWord = (currentWord << 1) | (bit - '0');
+			buffer = (buffer << 1) | (bit - '0');
 			++bitCount;
-
-			// 如果当前数据块已满（32 位），加入缓冲区
-			if (bitCount == 32) {
-				// 转换为小端字节序并加入缓冲区
-				for (int j = 0; j < 4; ++j) {
-					writeBuffer.push_back(static_cast<BYTE>((currentWord >> (8 * (3 - j))) & 0xFF));
-				}
-
-				currentWord = 0;
+			if (bitCount == 8) {
+				*targetFilePointer = buffer;
+				buffer = 0;
 				bitCount = 0;
-
-				// 如果缓冲区满了，写入文件
-				if (writeBuffer.size() >= bufferCapacity) {
-					DWORD written;
-					WriteFile(fileHandle, writeBuffer.data(), writeBuffer.size(), &written, nullptr);
-					writeBuffer.clear();
-				}
+				++targetFilePointer;
 			}
 		}
 	}
-
-	// 处理剩余不足 32 位的数据块
+	if (bitCount != 8 - sourceFile.WPL_Size.second)ErrorMessageBox(NULL, _T("实际写入数据数与计算值不匹配"));
+	//写入剩余的比特位
 	if (bitCount > 0) {
-		currentWord <<= (32 - bitCount); // 左对齐到 32 位
-		for (int j = 0; j < 4; ++j) {
-			writeBuffer.push_back(static_cast<BYTE>((currentWord >> (8 * (3 - j))) & 0xFF));
-		}
+		buffer <<= (8 - bitCount);
+		*targetFilePointer = buffer;
 	}
-
-	// 写入剩余数据
-	if (!writeBuffer.empty()) {
-		DWORD written;
-		WriteFile(fileHandle, writeBuffer.data(), writeBuffer.size(), &written, nullptr);
-	}
-	CloseHandle(fileHandle);
-	delete mapFileInfo;
+	delete mapSourceFileInfo;
+	delete mapTargetFileInfo;
 }
 
-void FileService::WriteZipFileHeader(const path& destFile, const vector<pair<BYTE, BYTE>>& codeLength)
+unsigned short FileService::WriteZipFileHeader(ZipFileInfo& zipFile)
 {
-	//打开压缩包文件
-	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+	zipFile.tempZipFilePath.assign(zipFile.zipFilePath);
+	while (exists(zipFile.tempZipFilePath)) {
+		zipFile.tempZipFilePath += ".temp";
+	}
+	//创建并打开压缩包文件
+	HANDLE fileHandle = CreateFile(zipFile.tempZipFilePath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
+		FileService::ErrorMessageBox(NULL, _T("无法创建压缩包文件"));
 	}
 	//设置文件指针
 	LARGE_INTEGER tempL_I;
 	tempL_I.QuadPart = 0;
-	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
+	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_BEGIN);
 	DWORD written;
 	//标识签名
 	char identification[2] = { 'y','a' };
 	WriteFile(fileHandle, identification, sizeof(identification), &written, nullptr);
 	//首部大小
-	unsigned short headerSize = 4 + sizeof(codeLength[0]) * codeLength.size();
+	unsigned short headerSize = 4 + sizeof(zipFile.codeLength[0]) * zipFile.codeLength.size();
 	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
 	//符号-编码长度表
-	for (size_t i = 0; i < codeLength.size(); ++i)
+	for (size_t i = 0; i < zipFile.codeLength.size(); ++i)
 	{
-		WriteFile(fileHandle, &codeLength[i], sizeof(codeLength[i]), &written, nullptr);
+		WriteFile(fileHandle, &zipFile.codeLength[i], sizeof(zipFile.codeLength[i]), &written, nullptr);
 	}
-
 	CloseHandle(fileHandle);
+	return headerSize;
 }
 
-void FileService::WriteFileHeader(const path& destFile, const path& sourceFile, const pair<uintmax_t, BYTE>& WPL_Size)
+unsigned short FileService::WriteFileHeader(const path& targetFile, const SelectedFileInfo& sourceFile)
 {
 	//打开压缩包文件
-	HANDLE fileHandle = CreateFile(destFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+	HANDLE fileHandle = CreateFile(targetFile.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fileHandle == INVALID_HANDLE_VALUE) {
 		FileService::ErrorMessageBox(NULL, _T("无法打开文件"));
 	}
@@ -169,19 +176,20 @@ void FileService::WriteFileHeader(const path& destFile, const path& sourceFile, 
 	SetFilePointerEx(fileHandle, tempL_I, nullptr, FILE_END);
 	DWORD written;
 	//首部大小
-	unsigned short headerSize = 19 + sourceFile.native().size() * 2;
+	unsigned short headerSize = 19 + sourceFile.fileName.wstring().size() * 2;
 	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
-	//文件类型和填充比特数
-	BYTE fileType_bitsCount = ((is_directory(sourceFile) ? 1 : 0) << 7) + WPL_Size.second;
+	//填充比特数
+	BYTE fileType_bitsCount = sourceFile.WPL_Size.second;
 	WriteFile(fileHandle, &fileType_bitsCount, sizeof(fileType_bitsCount), &written, nullptr);
-	//原始文件(夹)大小
-	uintmax_t oldSize = GetFileSize(sourceFile);
+	//原始文件大小
+	uintmax_t oldSize = sourceFile.oldFileSize;
 	WriteFile(fileHandle, &oldSize, sizeof(oldSize), &written, nullptr);
 	//数据块大小
-	WriteFile(fileHandle, &WPL_Size.first, sizeof(WPL_Size.first), &written, nullptr);
+	WriteFile(fileHandle, &sourceFile.WPL_Size.first, sizeof(sourceFile.WPL_Size.first), &written, nullptr);
 	//文件名
-	WriteFile(fileHandle, sourceFile.c_str(), sourceFile.native().size() * 2, &written, nullptr);
+	WriteFile(fileHandle, sourceFile.fileName.c_str(), headerSize - 19, &written, nullptr);
 
 	CloseHandle(fileHandle);
+	return headerSize;
 }
 
