@@ -1,62 +1,129 @@
-﻿#include"ZipFunc.h"
-#include <shobjidl.h> 
-#include "FileService.h"
-#include <chrono>
+﻿#include "FileService.h"
 #include "HuffmanCode.h"
+#include "ThreadPool.h"
+#include"ZipFunc.h"
+#include <chrono>
+#include <shobjidl.h> 
 
 void ZipFunc::StartZip(bool openMultiThread)
 {
 	//删除文件
-	if (exists(zipFileName))remove(zipFileName);
+	if (exists(zipFilePath))remove(zipFilePath);
+
+	//初始化线程池
+	size_t maxThreadAmount = 16;//临时占位 之后更改为用户设定的最大线程数
+	size_t availableThreadAmount = thread::hardware_concurrency();
+	ThreadPool threadPool(availableThreadAmount < maxThreadAmount ? availableThreadAmount : maxThreadAmount);
 	//开始压缩进行计时
 	auto startTime = std::chrono::high_resolution_clock::now();
-
-	//-----------------------------------单线程-----------------------------
-	//创建 符号-频率表
-	auto symbolFrequency = new unordered_map<BYTE, size_t>;
+	//------------------------------------------开始压缩-------------------------------------------
+	//0.将选择文件数组中的文件夹全部展开为文件
+	for (auto it = selectedFileArr->begin(); it != selectedFileArr->end(); ) {
+		if (!it->isFolder) {
+			++it;
+			continue;
+		}
+		//遍历文件夹下所有文件
+		for (const auto& entry : filesystem::recursive_directory_iterator(it->filePath)) {
+			if (entry.is_regular_file()) {
+				//文件插入数组
+				selectedFileArr->emplace_back(entry, absolute(entry), false, file_size(entry));//具体返回值存疑//这条代码有问题
+			}
+		}
+		//删除文件夹信息
+		it = selectedFileArr->erase(it);
+	}
 	
-	for (auto &filePath : filePathArr)
-	{
+	//1.统计各文件 字符-频率 表
+	//确定数据块大小(单位为字节)
+	UINT dataBlockSize = 4194304;//4MB
+	for (auto& selectedFile : *selectedFileArr) {
+		//如果文件(夹)为空,即其中数据字节数为0,直接跳过
+		if (!selectedFile.oldFileSize)continue;
 		//获取普通文件中 符号-频率
-		if (is_regular_file(filePath)) {
-			HuffmanCode::GetSymbolFrequency(*symbolFrequency, filePath);
+		if (!selectedFile.isFolder) {
+			UINT dataBlockAmount = selectedFile.oldFileSize/ dataBlockSize;
+			//如果剩余字节数超过数据块大小的一半,则增加一个数据块
+			if (dataBlockAmount == 0 || ((selectedFile.oldFileSize % dataBlockSize) >= (dataBlockSize / 2)) )++dataBlockAmount;
+			//将一个文件分成多个块处理
+			for (size_t i = 0; i < dataBlockAmount;++i) {
+				threadPool.SubmitTask(1,HuffmanCode::GetSymbolFrequency, selectedFile, i * dataBlockSize, dataBlockSize);
+			}
+			threadPool.SubmitTask(1, HuffmanCode::GetSymbolFrequency, selectedFile, (dataBlockAmount - 1) * dataBlockSize, 0);
 			continue;
 		}
 		//遍历文件夹中所有文件，获取 符号-频率
-		for (const auto& entry : filesystem::recursive_directory_iterator(filePath))
+		for (const auto& entry : filesystem::recursive_directory_iterator(selectedFile.filePath))
 		{
 			if (entry.is_regular_file())
 			{
-				HuffmanCode::GetSymbolFrequency(*symbolFrequency, entry);
+				UINT dataBlockAmount = selectedFile.oldFileSize / dataBlockSize;
+				//如果剩余字节数超过数据块大小的一半,则增加一个数据块
+				if (dataBlockAmount == 0 || ((selectedFile.oldFileSize % dataBlockSize) >= (dataBlockSize / 2)))++dataBlockAmount;
+				//将一个文件分成多个块处理
+				for (size_t i = 0; i < dataBlockAmount - 1; ++i) {
+					threadPool.SubmitTask(1, HuffmanCode::GetSymbolFrequency, selectedFile, i * dataBlockSize, dataBlockSize);
+				}
+				threadPool.SubmitTask(1, HuffmanCode::GetSymbolFrequency, selectedFile, (dataBlockAmount - 1) * dataBlockSize, 0);
 			}
 		}
 	}
-	//创建 符号-编码长度表
-	auto codeLength = new vector<pair<BYTE, BYTE>>;
+	//等待所有文件完成统计各自的 符号-频率 表
+	threadPool.WaitTask(1);
+	//2.汇总所有文件的 符号-频率 表
+	//创建 全局符号-频率表
+	auto symbolFrequency = new unordered_map<BYTE, size_t>;
+	//进行汇总
+	for (auto& selectedFile : *selectedFileArr) {
+		//如果文件(夹)为空,即其中数据字节数为0,直接跳过
+		if (!selectedFile.oldFileSize)continue;
+		HuffmanCode::MergeSymbolFrequency(*symbolFrequency, selectedFile.symbolFrequency);
+	}
+	//3.根据 全局符号-频率表 构建哈夫曼树并接收树根指针
 	HuffmanNode* rootNode = HuffmanCode::BuildHuffmanTree(*symbolFrequency);
-	//递归遍历哈夫曼树,获取各符号的编码长度
+	//4.递归遍历哈夫曼树,获取各符号的编码长度
+	//获取 符号-编码长度表
+	auto codeLength = new vector<pair<BYTE, BYTE>>;
 	HuffmanCode::EncodeHuffmanTree(*codeLength, rootNode);
-	//递归销毁哈夫曼树
-	HuffmanCode::DestroyHuffmanTree(rootNode);
-	//创建 符号-范式编码表
+	//后台递归销毁哈夫曼树
+	threadPool.SubmitTask(2, HuffmanCode::DestroyHuffmanTree, rootNode);
+	//5.利用 全局的符号-编码长度表 和各文件的 符号-频率 表,计算各文件压缩后数据大小和填补的比特数
+	for (auto& selectedFile : *selectedFileArr) {
+		//如果文件(夹)为空,即其中数据字节数为0,直接跳过
+		if (!selectedFile.oldFileSize)continue;
+		//获取普通文件中 WPL_Size
+		if (!selectedFile.isFolder) {
+			threadPool.SubmitTask(3, HuffmanCode::GetWPL, selectedFile.symbolFrequency, *codeLength, selectedFile.WPL_Size);
+			continue;
+		}
+		//遍历文件夹中所有文件，获取 WPL_Size
+		for (const auto& entry : filesystem::recursive_directory_iterator(selectedFile.filePath))
+		{
+			if (entry.is_regular_file())
+			{
+				threadPool.SubmitTask(3, HuffmanCode::GetWPL, selectedFile.symbolFrequency, *codeLength, selectedFile.WPL_Size);
+			}
+		}
+	}
+	//5.获取 符号-范式编码表
 	auto * symbolCode = new unordered_map<BYTE, string>;
 	HuffmanCode::GetNormalSymbolCode(*codeLength, *symbolCode);
 	//计时1
 	auto middleTime = std::chrono::high_resolution_clock::now();
 	//写入压缩包首部
-	//FileService::WriteZipFileHeader(zipFileName, *codeLength);
+	//FileService::WriteZipFileHeader(zipFilePath, *codeLength);
 	//写入文件
-	for (auto& filePath : filePathArr) {
-		if (is_regular_file(filePath)) {
+	for (auto& selectedFile : *selectedFileArr) {
+		if (is_regular_file(selectedFile.filePath)) {
 			//写入文件首部
-			FileService::ZipFile(filePath, zipFileName, *symbolCode);
+			FileService::ZipFile(selectedFile.filePath, zipFilePath, *symbolCode);
 			continue;
 		}
-		for (const auto& entry : filesystem::recursive_directory_iterator(filePath))
+		for (const auto& entry : filesystem::recursive_directory_iterator(selectedFile.filePath))
 		{
 			if (entry.is_regular_file())
 			{
-				FileService::ZipFile(entry, zipFileName, *symbolCode);
+				FileService::ZipFile(entry, zipFilePath, *symbolCode);
 			}
 		}
 	}
@@ -149,9 +216,9 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 				selectedIItemArray->GetItemAt(x,&selectedItem);
 				//获取文件路径
 				selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-				//当数组中不存在该文件路径时，插入文件路径数组
-				if (find_if(filePathArr.begin(), filePathArr.end(), [&filePath](path& temp) -> bool {return temp.wstring() == wstring(filePath); }) == filePathArr.end()){
-					filePathArr.push_back(filePath);
+				//当数组中不存在该文件时，插入已选择文件数组
+				if (find_if(selectedFileArr->begin(), selectedFileArr->end(), [&filePath](SelectedFileInfo& temp) -> bool {return temp.filePath.wstring() == wstring(filePath); }) == selectedFileArr->end()){
+					selectedFileArr->emplace_back(path(filePath).filename(), filePath, is_directory(filePath), FileService::GetFileSize(filePath));
 				}
 				//销毁资源
 				selectedItem->Release();
@@ -161,6 +228,24 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			selectedIItemArray->Release();
 			fileOpenDialog->Release();
 			CoUninitialize();
+
+			for (auto it = selectedFileArr->begin(); it != selectedFileArr->end(); ) {
+				if (!it->isFolder) {
+					++it;
+					continue;
+				}
+				//遍历文件夹下所有文件
+				for (const auto& entry : filesystem::recursive_directory_iterator(it->filePath)) {
+					if (entry.is_regular_file()) {
+						//文件插入数组
+						selectedFileArr->emplace_back(entry, absolute(entry), false, file_size(entry));//具体返回值存疑//这条代码有问题
+					}
+				}
+				//删除文件夹信息
+				it = selectedFileArr->erase(it);
+			}
+
+
 			//准备刷新列表数据
 			//删除所有行
 			ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID));
@@ -168,21 +253,21 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			LVITEM item;
 			wstring tempWString;
 			TCHAR tempTCHAR[21];
-			for (size_t x = 0; x < filePathArr.size();++x) {
+			for (size_t x = 0; x < selectedFileArr->size();++x) {
 				item.mask = LVIF_TEXT;
 				item.iItem = x;//项索引
 				item.iSubItem = 0;//子项索引
-				tempWString = filePathArr[x].filename().wstring();
+				tempWString = (*selectedFileArr)[x].fileName.wstring();
 				item.pszText = (LPTSTR)tempWString.c_str();//名称
 				ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
 				++item.iSubItem;//子项索引
-				if (is_directory(filePathArr[x]))item.pszText = (LPTSTR)_T("文件夹");//类型
+				if ((*selectedFileArr)[x].isFolder)item.pszText = (LPTSTR)_T("文件夹");//类型
 				else item.pszText = (LPTSTR)_T("文件");
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
 				++item.iSubItem;//子项索引
-				uintmax_t size = FileService::GetFileSize(filePathArr[x]);
+				uintmax_t size = (*selectedFileArr)[x].oldFileSize;
 				if(size >= (uintmax_t(2048*1024)*1024))_stprintf_s(tempTCHAR, _T("%.2f GB"), double(size)/(1024*1024*1024));
 				else if(size >= 2048*1024)_stprintf_s(tempTCHAR, _T("%.2f MB"), double(size)/(1024*1024));
 				else if(size >= 2048)_stprintf_s(tempTCHAR, _T("%.2f KB"), double(size)/1024);
@@ -191,7 +276,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 
 				++item.iSubItem;//子项索引
-				tempWString = filePathArr[x].wstring();
+				tempWString = (*selectedFileArr)[x].filePath.wstring();
 				item.pszText = (LPTSTR)tempWString.c_str();//路径
 				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
 			}
@@ -199,12 +284,12 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 		}
 		case (int)ZipFuncWndChildID::buttonDeleteID: {
 			HWND hwnd = GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID);
-			for (size_t x = 0; x < filePathArr.size(); ++x) {
+			for (size_t x = 0; x < selectedFileArr->size(); ++x) {
 				//点击删除时遍历所有项
 				UINT state = ListView_GetItemState(hwnd, x, LVIS_SELECTED);
 				//如果项被选中则删除
 				if (state & LVIS_SELECTED) {
-					filePathArr.erase(filePathArr.begin() + x);
+					selectedFileArr->erase(selectedFileArr->begin() + x);
 					ListView_DeleteItem(hwnd, x);
 					--x;//修正索引值
 				}
@@ -212,14 +297,14 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonStartID:{
-			//首先审查压缩文件名是否正确
-			if (filePathArr.empty()) {
+			if (selectedFileArr->empty()) {
 				MessageBox(hwnd_WndProc, _T("没有要压缩的文件(文件夹),请先添加文件(文件夹)"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
 				break;
 			}
 			int length = GetWindowTextLength(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID));
+			//审查压缩文件路径是否正确
 			if (!length) {
-				MessageBox(hwnd_WndProc, _T("文件名为空,请检查压缩文件名"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+				MessageBox(hwnd_WndProc, _T("文件名为空,请检查压缩文件路径"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
 				break;
 			}
 			LPTSTR fileNameStr = new TCHAR[length + 1];
@@ -241,7 +326,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			if (MessageBox(hwnd_WndProc, (_T("是否确定将所选文件(文件夹)压缩到当前路径?\n-") + fileName.native()).c_str(),_T("鸭一压") ,MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
 				break;
 			}
-			zipFileName = fileName;
+			zipFilePath = fileName;
 			//开始压缩
 			StartZip();
 			DestroyWindow(hwnd_WndProc);//销毁窗口并发送WM_DESTROY消息
@@ -333,8 +418,10 @@ LRESULT ZipFunc::WM_PAINT_WndProc(){
 
 LRESULT ZipFunc::WM_CREATE_WndProc(){
 	//初始化文件列表数组
-	vector<path> temptemp;
-	filePathArr.swap(temptemp);
+	if (selectedFileArr && !selectedFileArr->empty()) {
+		delete selectedFileArr;
+		selectedFileArr = new vector<SelectedFileInfo>;
+	}
 	//创建字体
 	lTSObject[0] = CreateFont(
 		20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,

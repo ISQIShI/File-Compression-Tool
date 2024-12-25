@@ -145,6 +145,7 @@
     <ClCompile Include="ZipFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SelectedFileInfo.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="FileService.h" />
     <ClInclude Include="HuffmanCode.h" />

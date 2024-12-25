@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include<unordered_map>
-#include<queue>
-
+#include "SelectedFileInfo.h"
 
 class HuffmanNode {
 public:
@@ -39,11 +38,11 @@ public:
 
 	一颗哈夫曼树的带权路径长度WPL,即使用该树进行编码压缩后数据的总长度,first参数为字节数，second参数为不足1字节填充的比特数
 	如果使用分块处理，可用于计算块的大小
-	pair<uintmax_t, BYTE>* WPL_Size
+	pair<uintmax_t, BYTE> WPL_Size
 	*/
 	
 	//获取文件某区域中 符号-频率表 (后两个参数用于控制文件读取范围,可以实现大文件分块读取)
-	static void GetSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency, const path& fileName, size_t fileOffset = 0, size_t fileMapSize = 0);
+	static void GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t fileOffset = 0, size_t fileMapSize = 0);
 	//合并两个 符号-频率表 (表2合并到表1)
 	static void MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency1, unordered_map<BYTE, size_t>& symbolFrequency2);
 	//根据 符号-频率表 构建一颗哈夫曼树并返回根节点指针 输出WPL(即根据传入的符号-频率表进行压缩后数据的总长度)(可选)

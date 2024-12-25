@@ -6,4 +6,5 @@ int WINAPI _tWinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE hPreInstance,
 	MyWnds::SethInstance(_hInstance);
 	MyWnds& a = MainWnd::GetMainWnd();
 	a.Wnd(true);
+	
 }

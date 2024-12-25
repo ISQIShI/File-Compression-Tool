@@ -37,7 +37,7 @@ void FileService::MapFileReader(MapFileInfo& mapFileInfo)
 		ErrorMessageBox(NULL, _T("无法映射文件视图"));
 	}
 	if (mapFileInfo.fileMapSize == 0) {
-		mapFileInfo.fileMapSize = file_size(mapFileInfo.fileName);
+		mapFileInfo.fileMapSize = file_size(mapFileInfo.fileName) - mapFileInfo.fileOffset;
 	}
 }
 
