@@ -5,10 +5,11 @@
 #include <chrono>
 #include <shobjidl.h> 
 
+
 void ZipFunc::StartZip(bool openMultiThread)
 {
 	//初始化线程池
-	size_t maxThreadAmount = 16;//临时占位 之后更改为用户设定的最大线程数
+	size_t maxThreadAmount = 20;//临时占位 之后更改为用户设定的最大线程数
 	size_t availableThreadAmount = thread::hardware_concurrency();
 	ThreadPool threadPool(availableThreadAmount < maxThreadAmount ? availableThreadAmount : maxThreadAmount);
 	//开始压缩进行计时
@@ -62,15 +63,15 @@ void ZipFunc::StartZip(bool openMultiThread)
 	//3.根据 全局符号-频率表 构建哈夫曼树并接收树根指针
 	HuffmanNode* rootNode = HuffmanCode::BuildHuffmanTree(*globalSymbolFrequency);
 	//4.递归遍历哈夫曼树,获取 全局符号-编码长度表
-	HuffmanCode::EncodeHuffmanTree(zipFile.codeLength, rootNode);
+	HuffmanCode::EncodeHuffmanTree(zipFile->codeLength, rootNode);
 	//后台递归销毁哈夫曼树
 	threadPool.SubmitTask(2, HuffmanCode::DestroyHuffmanTree, rootNode);
 	//5.写入压缩包首部
-	std::future zipFileHeaderSize = threadPool.SubmitTask(3,FileService::WriteZipFileHeader,ref(zipFile));
+	std::future zipFileHeaderSize = threadPool.SubmitTask(3,FileService::WriteZipFileHeader,ref(*zipFile));
 	//6.获取 全局符号-范式编码表
-	HuffmanCode::GetNormalSymbolCode(zipFile.codeLength, zipFile.symbolCode);
+	HuffmanCode::GetNormalSymbolCode(zipFile->codeLength, zipFile->symbolCode);
 	//等待第5步任务完成
-	zipFile.newFileSize += zipFileHeaderSize.get();
+	zipFile->newFileSize += zipFileHeaderSize.get();
 	//中间计时1
 	auto middleTime = std::chrono::high_resolution_clock::now();
 	//7.正式开始写入文件
@@ -78,29 +79,33 @@ void ZipFunc::StartZip(bool openMultiThread)
 		//如果文件为空,即其中数据字节数为0,直接跳过
 		//if (!selectedFile.oldFileSize)continue;
 		//获取文件中 WPL_Size
-		//threadPool.SubmitTask(4, HuffmanCode::GetWPL, selectedFile.symbolFrequency, zipFile.codeLength, selectedFile.WPL_Size);
-		threadPool.SubmitTask(5, [this, &selectedFile]() {
+		//threadPool.SubmitTask(4, HuffmanCode::GetWPL, selectedFile.symbolFrequency, zipFile->codeLength, selectedFile.WPL_Size);
+		/*threadPool.SubmitTask(5, [this, &selectedFile]() {
 			//利用 全局的符号-编码长度表 和各文件的 符号-频率 表,计算各非空文件压缩后数据大小和填补的比特数
-			if(selectedFile.oldFileSize) HuffmanCode::GetWPL(selectedFile.symbolFrequency, zipFile.codeLength, selectedFile.WPL_Size);
+			if(selectedFile.oldFileSize) HuffmanCode::GetWPL(selectedFile.symbolFrequency, zipFile->codeLength, selectedFile.WPL_Size);
 			static std::mutex zipFileSizeMutex;
 			uintmax_t offset;
 			{//上锁
 				lock_guard<std::mutex> lock(zipFileSizeMutex);
 				//写入文件首部
-				offset = zipFile.newFileSize + FileService::WriteFileHeader(zipFile.tempZipFilePath,ref(selectedFile));
-				zipFile.newFileSize = offset + selectedFile.WPL_Size.first;
+				offset = zipFile->newFileSize + FileService::WriteFileHeader(ref(selectedFile),ref(*zipFile));
+				zipFile->newFileSize = offset + selectedFile.WPL_Size.first;
+				FileService::ExtendFile(zipFile->tempZipFilePath, zipFile->newFileSize);
 			}//解锁
+			//如果文件为空,即其中数据字节数为0,直接跳过
+			if (!selectedFile.oldFileSize)return;
 			//写入文件压缩数据
-			FileService::ZipFile(ref(selectedFile), ref(zipFile), 0, 0, offset, selectedFile.WPL_Size.first);
+			FileService::ZipFile(ref(selectedFile), ref(*zipFile), 0, 0, offset, selectedFile.WPL_Size.first);
 			}
-		);
+		);*/
+		threadPool.SubmitTask(5, &ZipFunc::TEMP, this, ref(selectedFile));
 	}
 	//等待文件写入完成
 	threadPool.WaitTask(5);
 	//删除同名文件，更名
-	if ((zipFile.zipFilePath != zipFile.tempZipFilePath) && exists(zipFile.zipFilePath)) {
-		remove(zipFile.zipFilePath);
-		rename(zipFile.tempZipFilePath, zipFile.zipFilePath);
+	if ((zipFile->zipFilePath != zipFile->tempZipFilePath) && exists(zipFile->zipFilePath)) {
+		remove(zipFile->zipFilePath);
+		rename(zipFile->tempZipFilePath, zipFile->zipFilePath);
 	}
 	//销毁资源
 	delete globalSymbolFrequency;
@@ -111,6 +116,26 @@ void ZipFunc::StartZip(bool openMultiThread)
 	TCHAR tempTCHAR[50];
 	_stprintf_s (tempTCHAR, _T("压缩时间：\n获取编码表 %f 秒\n写入文件 %f 秒"), duration1.count()/1000000.0,duration2.count()/1000000.0);
 	TestMessageBox(hwnd_WndProc, tempTCHAR, _T("压缩完成"));
+}
+
+void ZipFunc::TEMP(SelectedFileInfo& selectedFile)
+{
+
+	//利用 全局的符号-编码长度表 和各文件的 符号-频率 表,计算各非空文件压缩后数据大小和填补的比特数
+	if (selectedFile.oldFileSize) HuffmanCode::GetWPL(selectedFile.symbolFrequency, zipFile->codeLength, selectedFile.WPL_Size);
+	static std::mutex zipFileSizeMutex;
+	uintmax_t offset;
+	{//上锁
+		lock_guard<std::mutex> lock(zipFileSizeMutex);
+		//写入文件首部
+		offset = zipFile->newFileSize + FileService::WriteFileHeader(ref(selectedFile), ref(*zipFile));
+		zipFile->newFileSize = offset + selectedFile.WPL_Size.first;
+		FileService::ExtendFile(zipFile->tempZipFilePath, zipFile->newFileSize);
+	}//解锁
+	//如果文件为空,即其中数据字节数为0,直接跳过
+	if (!selectedFile.oldFileSize)return;
+	//写入文件压缩数据
+	FileService::ZipFile(ref(selectedFile), ref(*zipFile), 0, 0, offset, selectedFile.WPL_Size.first);
 }
 
 ATOM ZipFunc::RegisterWndClass()
@@ -299,7 +324,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			if (MessageBox(hwnd_WndProc, (_T("是否确定将所选文件(文件夹)压缩到当前路径?\n-") + fileName.native()).c_str(),_T("鸭一压") ,MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
 				break;
 			}
-			zipFile.zipFilePath = fileName;
+			zipFile->zipFilePath = fileName;
 			//开始压缩
 			StartZip();
 			DestroyWindow(hwnd_WndProc);//销毁窗口并发送WM_DESTROY消息
@@ -394,6 +419,11 @@ LRESULT ZipFunc::WM_CREATE_WndProc(){
 	if (selectedFileArr && !selectedFileArr->empty()) {
 		delete selectedFileArr;
 		selectedFileArr = new vector<SelectedFileInfo>;
+	}
+	//初始化压缩文件信息
+	if (zipFile) {
+		delete zipFile;
+        zipFile = new ZipFileInfo;
 	}
 	//创建字体
 	lTSObject[0] = CreateFont(

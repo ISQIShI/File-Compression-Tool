@@ -31,7 +31,7 @@ struct TaskInfo {
 };
 
 class ThreadPool {
-	std::vector<ThreadInfo> workThreads;//工作线程容器
+	std::vector<std::unique_ptr<ThreadInfo>> workThreads;//工作线程容器
 	std::queue<TaskInfo> taskQueue;//任务队列
 	std::mutex queueMutex;//任务队列的互斥锁
 	std::condition_variable threadWaitTask;//条件变量,用于使线程休眠等待任务
@@ -70,11 +70,12 @@ public:
 	explicit ThreadPool(size_t threadAmount = std::thread::hardware_concurrency()): isRunning(true),waitTaskID(0) {
 		if (threadAmount == 0) threadAmount = 1;
 		// 创建指定数量的线程
-		ThreadInfo* currentThreadInfo = nullptr;
 		for (size_t i = 0; i < threadAmount; ++i) {
-			currentThreadInfo = &workThreads.emplace_back(nullptr, false, 0, this);
+			auto currentThreadInfo = std::make_unique<ThreadInfo>(nullptr, false, 0, this);
 			//使线程与线程信息互相关联建立联系
-			currentThreadInfo->mThread = new std::thread(&ThreadPool::ThreadLoop,this,currentThreadInfo);
+			currentThreadInfo->mThread = new std::thread(&ThreadPool::ThreadLoop, this, currentThreadInfo.get());
+			//转移所有权到容器内
+			workThreads.emplace_back(std::move(currentThreadInfo));
 		}
 	}
 	// 提交任务到线程池

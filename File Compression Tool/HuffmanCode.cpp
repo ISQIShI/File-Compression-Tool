@@ -37,6 +37,7 @@ void HuffmanCode::MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFreque
 
 HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& symbolFrequency, pair<uintmax_t, BYTE>* WPL_Size)
 {
+	if (symbolFrequency.empty())return nullptr;
 	//将符号-频率表导入优先队列
 	priority_queue < HuffmanNode*, vector<HuffmanNode*>, HuffmanNodeCompare > frequencyQueue;
 	for (auto& [symbol, frequence] : symbolFrequency) {
@@ -44,6 +45,7 @@ HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& sy
 	}
 	//构建哈夫曼树
 	HuffmanNode* leftTree, * rightTree, * parentTree;
+	BYTE tempBits;
 	while (frequencyQueue.size() > 1) {
 		leftTree = frequencyQueue.top();
 		frequencyQueue.pop();
@@ -59,9 +61,16 @@ HuffmanNode* HuffmanCode::BuildHuffmanTree(const unordered_map<BYTE, size_t>& sy
 				continue;
 			}
 			//增加字节计数
-			WPL_Size->first += ((parentTree->frequency - WPL_Size->second) / 8) + 1;
+			WPL_Size->first += (parentTree->frequency - WPL_Size->second) / 8;
 			//更新记录填充的比特数
-			WPL_Size->second = 8 - ((parentTree->frequency - WPL_Size->second) % 8);
+			tempBits = (parentTree->frequency - WPL_Size->second) % 8;
+			if (tempBits) {
+				WPL_Size->first += 1;
+				WPL_Size->second = 8 - tempBits;
+			}
+			else {
+				WPL_Size->second = 0;
+			}
 		}
 	}
 	return frequencyQueue.top();
@@ -104,6 +113,7 @@ void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vect
 	/*//考虑到可能的多线程情况，不直接操作传进来的实参
 	pair<uintmax_t, BYTE> wpl_size = {0,0};*/
 	size_t temp;
+	BYTE tempBits;
 	for (auto& [symbol,clength]: codeLength) {
 		temp = symbolFrequency[symbol] * clength;
 		//如果新增加的比特个数小于等于填充的比特数，则全部用于"还债"，字节数不增加
@@ -112,9 +122,16 @@ void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vect
 			continue;
 		}
 		//增加字节计数
-		WPL_Size.first += ((temp - WPL_Size.second) / 8) + 1;
+		WPL_Size.first += (temp - WPL_Size.second) / 8;
 		//更新记录填充的比特数
-		WPL_Size.second = 8 - ((temp - WPL_Size.second) % 8);
+		tempBits = (temp - WPL_Size.second) % 8;
+		if (tempBits) {
+			WPL_Size.first += 1;
+			WPL_Size.second = 8 - tempBits;
+		}
+		else {
+			WPL_Size.second = 0;
+		}
     }
 	/*
 	//将结果叠加到实参当中
@@ -130,13 +147,16 @@ void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vect
 
 void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode)
 {
-	//先对符号-编码长度表进行排序
-	sort(codeLength.begin(), codeLength.end(), [](const pair<BYTE, BYTE>& x, const pair<BYTE, BYTE>& y) {
-		//编码长度越小越靠前，编码长度相同时，符号值越小越靠前
-		return (x.second < y.second) || ((x.second == y.second) && (x.first < y.first)); 
-		});
+	if (codeLength.empty())return;
 	//处理只有一个符号时，编码长度为0的情况
 	if (codeLength.size() == 1 && codeLength[0].second == 0) { codeLength[0].second = 1; }
+	else {
+		//先对符号-编码长度表进行排序
+		sort(codeLength.begin(), codeLength.end(), [](const pair<BYTE, BYTE>& x, const pair<BYTE, BYTE>& y) {
+			//编码长度越小越靠前，编码长度相同时，符号值越小越靠前
+			return (x.second < y.second) || ((x.second == y.second) && (x.first < y.first));
+			});
+	}
 	//上一个进行编码的符号的编码长度
 	BYTE lastLength = codeLength[0].second;
 	//上一个符号的编码

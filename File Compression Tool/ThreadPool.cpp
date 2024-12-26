@@ -2,10 +2,7 @@
 
 void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 {
-	if (threadinfo == nullptr) {
-		ErrorMessageBox(NULL, _T("线程信息指针为空"));
-		return;
-	}
+	//注意若将线程容器中元素删除, threadinfo 会变成野指针,若之后扩展功能需考虑该情况
 	//每个线程的工作函数
 	while (true) {
 		std::function<void()> task; //用于存储取出的任务
@@ -43,10 +40,10 @@ void ThreadPool::ShutDownThreadPool()
 	}
 	threadWaitTask.notify_all(); // 唤醒所有线程
 	for (auto& worker : workThreads) {
-		if (worker.mThread && worker.mThread->joinable()) {
-			worker.mThread->join(); // 等待线程结束
-			delete worker.mThread;
-			worker.mThread = nullptr;
+		if (worker->mThread && worker->mThread->joinable()) {
+			worker->mThread->join(); // 等待线程结束
+			delete worker->mThread;
+			worker->mThread = nullptr;
 		}
 	}
 }
@@ -57,10 +54,14 @@ bool ThreadPool::FindTask(size_t taskID)
 	std::unique_lock<std::mutex> lock(queueMutex);
 	std::queue<TaskInfo> tempTaskQueue(taskQueue);
 	lock.unlock();
-
+	//循环判断队列中是否有任务
 	while (!tempTaskQueue.empty()) {
 		if (tempTaskQueue.front().taskID == taskID)return true;
 		tempTaskQueue.pop();
+	}
+	//检查是否有线程在执行该任务
+	for (auto& worker : workThreads) {
+        if (worker->taskID == taskID)return true;
 	}
 	return false;
 }

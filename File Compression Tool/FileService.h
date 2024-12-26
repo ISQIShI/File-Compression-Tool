@@ -44,7 +44,9 @@ public:
 	//错误信息弹窗
 	static void ErrorMessageBox(const HWND& hwnd = NULL, const TCHAR* msg = _T(""), bool showErrorCode = true);
 	//使用内存映射文件
-	static void MapFile(MapFileInfo & mapFileInfo,bool needAutoExtendFile = false);
+	static void MapFile(MapFileInfo & mapFileInfo);
+	//扩展一个已存在文件到对应大小 [只支持单线程]
+	static void ExtendFile(const path& extendFile, size_t extendSize);
 	//使用递归获取文件夹大小
     static uintmax_t GetFileSize(const path& fileName);
 	//将源文件某区域中的数据依照 符号-编码表 写入目的文件
@@ -52,5 +54,5 @@ public:
 	//写入压缩文件首部
 	static unsigned short WriteZipFileHeader(ZipFileInfo& zipFile);
 	//写入文件首部
-	static unsigned short WriteFileHeader(const path& targetFile, const SelectedFileInfo& sourceFile);
+	static unsigned short WriteFileHeader(const SelectedFileInfo& sourceFile, const ZipFileInfo& targetFile);
 };
