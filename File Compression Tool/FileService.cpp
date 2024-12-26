@@ -62,8 +62,12 @@ void FileService::MapFile(MapFileInfo& mapFileInfo, bool needAutoExtendFile)
 		ErrorMessageBox(NULL, _T("无法创建文件映射对象"));
 	}
 	
+	//对偏移量和映射大小进行修正
+	size_t realOffset = mapFileInfo.fileOffset - mapFileInfo.offsetCorrection;
+	size_t realMapSize = mapFileInfo.fileMapSize + mapFileInfo.offsetCorrection;
+
 	//映射文件视图获取文件映射指针
-	mapFileInfo.mapViewPointer = MapViewOfFile(mapFileInfo.fileMapHandle, FILE_MAP_WRITE, (mapFileInfo.fileOffset >> 32) & 0xffffffff, mapFileInfo.fileOffset & 0xffffffff, mapFileInfo.fileMapSize);
+	mapFileInfo.mapViewPointer = MapViewOfFile(mapFileInfo.fileMapHandle, FILE_MAP_WRITE, (realOffset >> 32) & 0xffffffff, realOffset & 0xffffffff, realMapSize);
 	if (mapFileInfo.mapViewPointer == NULL) {
 		CloseHandle(mapFileInfo.fileMapHandle);
         CloseHandle(mapFileInfo.fileHandle);
@@ -108,6 +112,9 @@ void FileService::ZipFile(const SelectedFileInfo& sourceFile,ZipFileInfo& target
 
 	BYTE buffer = 0;
 	BYTE bitCount = 0;
+	//修正文件指针
+	sourceFilePointer += mapSourceFileInfo->offsetCorrection;
+	targetFilePointer += mapTargetFileInfo->offsetCorrection;
 	for (size_t reader = 0; reader < mapSourceFileInfo->fileMapSize; ++reader,++sourceFilePointer) {
 		//读取当前源文件指针所指向字节，并获得对应的编码
 		const std::string& code = targetFile.symbolCode.at(*sourceFilePointer);

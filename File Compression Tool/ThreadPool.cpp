@@ -2,6 +2,10 @@
 
 void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 {
+	if (threadinfo == nullptr) {
+		ErrorMessageBox(NULL, _T("线程信息指针为空"));
+		return;
+	}
 	//每个线程的工作函数
 	while (true) {
 		std::function<void()> task; //用于存储取出的任务
@@ -18,7 +22,7 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 			taskQueue.pop();
 		}
 		if (!task) {
-			ErrorMessageBox(NULL, _T("线程池异常退出"));
+			ErrorMessageBox(NULL, _T("任务函数为空"));
 			continue;
 		}
 		//执行任务
@@ -42,23 +46,23 @@ void ThreadPool::ShutDownThreadPool()
 		if (worker.mThread && worker.mThread->joinable()) {
 			worker.mThread->join(); // 等待线程结束
 			delete worker.mThread;
+			worker.mThread = nullptr;
 		}
 	}
 }
 
 bool ThreadPool::FindTask(size_t taskID)
 {
-    std::vector<TaskInfo> taskVector;
 	//保护任务队列
-	queueMutex.lock();
+	std::unique_lock<std::mutex> lock(queueMutex);
 	std::queue<TaskInfo> tempTaskQueue(taskQueue);
-	queueMutex.unlock();
+	lock.unlock();
 
 	while (!tempTaskQueue.empty()) {
-		taskVector.emplace_back(tempTaskQueue.front());
+		if (tempTaskQueue.front().taskID == taskID)return true;
 		tempTaskQueue.pop();
 	}
-	return std::find_if(taskVector.begin(), taskVector.end(), [taskID](const TaskInfo& temp) {return temp.taskID == taskID; }) != taskVector.end();
+	return false;
 }
 
 void ThreadPool::WaitTask(size_t taskID)

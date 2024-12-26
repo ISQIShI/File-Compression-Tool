@@ -11,10 +11,12 @@ void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t file
 	FileService::MapFile(*mapFileInfo);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
+	//修正文件指针
+	filePointer += mapFileInfo->offsetCorrection;
 	//文件指针逐字节遍历整个映射的区域
-	for (size_t x = 0; x < mapFileInfo->fileMapSize; x++) {
+	for (size_t x = 0; x < mapFileInfo->fileMapSize; ++x,++filePointer) {
 		//符号对应的频率增加
-		++(*symbolfrequency)[filePointer[x]];
+		++(*symbolfrequency)[*filePointer];
 	}
 	{//上锁
 		std::lock_guard<std::mutex> lock(*selectedFile.threadLock);

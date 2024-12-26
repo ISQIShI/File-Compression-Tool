@@ -98,7 +98,7 @@ void ZipFunc::StartZip(bool openMultiThread)
 	//等待文件写入完成
 	threadPool.WaitTask(5);
 	//删除同名文件，更名
-	if (exists(zipFile.zipFilePath)) {
+	if ((zipFile.zipFilePath != zipFile.tempZipFilePath) && exists(zipFile.zipFilePath)) {
 		remove(zipFile.zipFilePath);
 		rename(zipFile.tempZipFilePath, zipFile.zipFilePath);
 	}
