@@ -70,8 +70,6 @@ struct SelectedFileInfo {
 	//禁止拷贝构造和赋值操作
 	SelectedFileInfo(const SelectedFileInfo&) = delete;
 	SelectedFileInfo& operator=(const SelectedFileInfo&) = delete;
-	~SelectedFileInfo() {
-		if(globalSymbolFrequency) delete globalSymbolFrequency;
-	}
+	~SelectedFileInfo() {}
 };
 
