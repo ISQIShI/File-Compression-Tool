@@ -7,6 +7,8 @@
 using namespace std;
 using namespace filesystem;
 
+class ThreadPool;
+
 enum class ZipFuncWndChildID :unsigned char {
 	buttonSelectFileID,
 	buttonSelectFolderID,
@@ -26,12 +28,12 @@ enum class selectedFileListColumnID :unsigned char {
 
 class ZipFunc :public MyWnds{
 	//存储选择的文件信息
-	vector<SelectedFileInfo>* selectedFileArr =new vector<SelectedFileInfo>;
+	vector<SelectedFileInfo>* selectedFileArr = new vector<SelectedFileInfo>;
 	//存储压缩包的信息
 	ZipFileInfo *zipFile = new ZipFileInfo;
 	//--------------------------执行压缩功能的函数----------------------------
 	void StartZip(bool openMultiThread = false);
-	void TEMP(SelectedFileInfo & selectedFile);
+	void WriteSelectedFileData(SelectedFileInfo & selectedFile, ThreadPool & threadPool, size_t fileFlag);
 	//--------------------------子类重写的窗口函数----------------------------
 	//注册窗口类
 	ATOM RegisterWndClass() override;
@@ -59,6 +61,7 @@ class ZipFunc :public MyWnds{
 	~ZipFunc() {
 		//销毁资源
 		if (selectedFileArr)delete selectedFileArr;
+		if (zipFile)delete zipFile;
 	}; //禁止外部析构
 	ZipFunc(const ZipFunc& mainWnd) = delete;//禁止外部拷贝构造
 	const ZipFunc& operator=(const ZipFunc& mainWnd) = delete;//禁止外部赋值操作

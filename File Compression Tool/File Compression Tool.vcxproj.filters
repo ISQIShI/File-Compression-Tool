@@ -46,6 +46,9 @@
     <ClCompile Include="ZipFunc.cpp">
       <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
+    <ClCompile Include="SelectedFileInfo.cpp">
+      <Filter>Entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyWnds.h">

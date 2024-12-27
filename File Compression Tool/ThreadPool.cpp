@@ -8,10 +8,10 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 		std::function<void()> task; //用于存储取出的任务
 		{ //进入临界区，保护任务队列(共享数据)被正常读写
 			std::unique_lock<std::mutex> lock(queueMutex);
-			//线程休眠，直到有可用任务或线程池停止运行再唤醒
-			threadWaitTask.wait(lock, [this] {return !isRunning || !taskQueue.empty(); });
-			//如果线程池停止且没有任务，退出线程
-			if (!isRunning && taskQueue.empty())return;
+			//线程休眠，直到有可用任务或线程池停止运行或线程被终止再唤醒
+			threadWaitTask.wait(lock, [this, threadinfo] {return !isRunning || threadinfo->willTerminate ||!taskQueue.empty();});
+			//如果线程被终止或者线程池停止且没有任务，退出线程
+			if (threadinfo->willTerminate || (!isRunning && taskQueue.empty()))return;
 			//从队列中取出任务
 			task = std::move(taskQueue.front().taskFunc);
 			//获取任务ID
@@ -26,8 +26,6 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 		threadinfo->isWorking = true;
 		task();
 		threadinfo->isWorking = false;
-		//如果完成的任务与等待任务ID一致,发送通知
-		if (threadinfo->taskID == waitTaskID)completeTask.notify_all();
 		threadinfo->taskID = 0;
 	}
 }
@@ -43,9 +41,39 @@ void ThreadPool::ShutDownThreadPool()
 		if (worker->mThread && worker->mThread->joinable()) {
 			worker->mThread->join(); // 等待线程结束
 			delete worker->mThread;
-			worker->mThread = nullptr;
 		}
 	}
+    workThreads.clear();
+}
+
+void ThreadPool::DestroyThread(std::thread::id threadID)
+{
+	threadMutex.lock();
+	auto temp = find_if(workThreads.begin(), workThreads.end(), [threadID](const std::unique_ptr<ThreadInfo>& worker) { return worker->threadID == threadID; });
+	threadMutex.unlock();
+	if (temp == workThreads.end()) return;
+	if (workThreads.size() <= 1)
+	{
+		ShutDownThreadPool();
+		return;
+	}
+    (*temp)->willTerminate = true;
+	threadWaitTask.notify_all();
+	if ((*temp)->mThread && (*temp)->mThread->joinable()) {
+		(*temp)->mThread->join();
+		delete (*temp)->mThread;
+	}
+	threadMutex.lock();
+	workThreads.erase(temp);
+	threadMutex.unlock();
+}
+
+ThreadInfo* ThreadPool::FindThread(std::thread::id threadID)
+{
+    std::lock_guard<std::mutex> lock(threadMutex);
+	auto temp = find_if(workThreads.begin(), workThreads.end(), [threadID](const std::unique_ptr<ThreadInfo>& worker) { return worker->threadID == threadID; });
+    if (temp != workThreads.end())return (*temp).get();
+	return nullptr;
 }
 
 bool ThreadPool::FindTask(size_t taskID)
@@ -68,9 +96,41 @@ bool ThreadPool::FindTask(size_t taskID)
 
 void ThreadPool::WaitTask(size_t taskID)
 {
-	waitTaskID = taskID;
-	std::unique_lock<std::mutex> lock(completeMutex);
-	completeTask.wait(lock, [this,taskID]() {return !FindTask(taskID); });
-	waitTaskID = 0;
+	ThreadInfo* temp = FindThread(std::this_thread::get_id());
+	std::thread::id threadid;
+	if (temp) {
+		auto currentThreadInfo = std::make_unique<ThreadInfo>(nullptr, false, false, 0, this);
+		//使线程与线程信息互相关联建立联系
+		currentThreadInfo->mThread = new std::thread(&ThreadPool::ThreadLoop, this, currentThreadInfo.get());
+		currentThreadInfo->threadID = currentThreadInfo->mThread->get_id();
+		threadid = currentThreadInfo->threadID;
+		//转移所有权到容器内
+		std::lock_guard<std::mutex> lock(threadMutex);
+		workThreads.emplace_back(std::move(currentThreadInfo));
+	}
+	while (true) {
+		for (size_t i = 0; i < waitTasks.size(); ++i) {
+			if (waitTasks[i].first == taskID) {
+				waitTasks[i].second->wait();
+				std::lock_guard<std::mutex> lock(waitTaskMutex);
+				//二次判断
+				if (i < waitTasks.size() && waitTasks[i].first == taskID && waitTasks[i].second->_Is_ready()) {
+					waitTasks.erase(waitTasks.begin() + i);
+					--i;//修正索引值
+				}
+			}
+		}
+		//二次验证重新遍历以保证行为安全
+		std::lock_guard<std::mutex> lock(waitTaskMutex);
+		if (find_if(waitTasks.begin(), waitTasks.end(), [taskID](const std::pair<size_t, std::unique_ptr<FutureWrapperBase>>& waittask) {return waittask.first == taskID; }) == waitTasks.end()) {
+			//未找到直接跳出循环
+			break;
+		}
+		//二次验证时若还有对应ID的任务未完成,说明第一次遍历可能出现错误,继续循环
+	}
+	if (temp) {
+		//销毁刚刚创建的那个线程
+		std::thread(&ThreadPool::DestroyThread, this, threadid).detach();
+	}
 }
 

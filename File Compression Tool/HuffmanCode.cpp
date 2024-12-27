@@ -2,13 +2,11 @@
 #include"HuffmanCode.h"
 #include<queue>
 
-void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t fileOffset, size_t fileMapSize)
+void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t dataBlockIndex,size_t fileOffset, size_t fileMapSize)
 {
 	MapFileInfo* mapFileInfo = new MapFileInfo((LPTSTR)selectedFile.filePath.c_str(), fileOffset, fileMapSize);
-	//创建临时变量用于多线程
-	unordered_map<BYTE, size_t>* symbolfrequency = new unordered_map<BYTE, size_t>;
 	//进行文件映射
-	FileService::MapFile(*mapFileInfo);
+	FileService::MapFile(*mapFileInfo,true);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
 	//修正文件指针
@@ -16,22 +14,20 @@ void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t file
 	//文件指针逐字节遍历整个映射的区域
 	for (size_t x = 0; x < mapFileInfo->fileMapSize; ++x,++filePointer) {
 		//符号对应的频率增加
-		++(*symbolfrequency)[*filePointer];
+		++(selectedFile.dataBlocksymbolFrequency[dataBlockIndex])[*filePointer];
 	}
 	{//上锁
 		std::lock_guard<std::mutex> lock(*selectedFile.threadLock);
-		//将局部统计的 符号-频率表 合并到文件信息中
-		MergeSymbolFrequency(selectedFile.symbolFrequency, *symbolfrequency);
+		//将局部统计的 符号-频率表 合并到 文件的 符号-频率表中
+		MergeSymbolFrequency(selectedFile.symbolFrequency,selectedFile.dataBlocksymbolFrequency[dataBlockIndex]);
 	}//自动解锁
 	delete mapFileInfo;
-	delete symbolfrequency;
 }
 
-void HuffmanCode::MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency1, unordered_map<BYTE, size_t>& symbolFrequency2)
+void HuffmanCode::MergeSymbolFrequency(unordered_map<BYTE, size_t>& targetSymbolFrequency,const unordered_map<BYTE, size_t>& sourceSymbolFrequency)
 {
-
-	for (auto& [symbol, frequence] : symbolFrequency2) {
-		symbolFrequency1[symbol] += frequence;
+	for (auto& [symbol, frequence] : sourceSymbolFrequency) {
+		targetSymbolFrequency[symbol] += frequence;
 	}
 }
 
@@ -107,42 +103,45 @@ void HuffmanCode::EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,Huffman
 }
 
 
-void HuffmanCode::GetWPL(unordered_map<BYTE, size_t>& symbolFrequency,const vector<pair<BYTE, BYTE>>& codeLength, pair<uintmax_t, BYTE>& WPL_Size)
+void HuffmanCode::GetWPL(SelectedFileInfo& selectedFile, size_t dataBlockIndex, const vector<pair<BYTE, BYTE>>& codeLength)
 {
-	
-	/*//考虑到可能的多线程情况，不直接操作传进来的实参
-	pair<uintmax_t, BYTE> wpl_size = {0,0};*/
 	size_t temp;
 	BYTE tempBits;
 	for (auto& [symbol,clength]: codeLength) {
-		temp = symbolFrequency[symbol] * clength;
+		temp = selectedFile.dataBlocksymbolFrequency[dataBlockIndex][symbol] * clength;
 		//如果新增加的比特个数小于等于填充的比特数，则全部用于"还债"，字节数不增加
-		if (temp <= WPL_Size.second) {
-			WPL_Size.second -= temp;
+		if (temp <= selectedFile.dataBlockWPL_Size[dataBlockIndex].second) {
+			selectedFile.dataBlockWPL_Size[dataBlockIndex].second -= temp;
 			continue;
 		}
 		//增加字节计数
-		WPL_Size.first += (temp - WPL_Size.second) / 8;
+		selectedFile.dataBlockWPL_Size[dataBlockIndex].first += (temp - selectedFile.dataBlockWPL_Size[dataBlockIndex].second) / 8;
 		//更新记录填充的比特数
-		tempBits = (temp - WPL_Size.second) % 8;
+		tempBits = (temp - selectedFile.dataBlockWPL_Size[dataBlockIndex].second) % 8;
 		if (tempBits) {
-			WPL_Size.first += 1;
-			WPL_Size.second = 8 - tempBits;
+			selectedFile.dataBlockWPL_Size[dataBlockIndex].first += 1;
+			selectedFile.dataBlockWPL_Size[dataBlockIndex].second = 8 - tempBits;
 		}
 		else {
-			WPL_Size.second = 0;
+			selectedFile.dataBlockWPL_Size[dataBlockIndex].second = 0;
 		}
     }
-	/*
-	//将结果叠加到实参当中
-    WPL_Size.first += wpl_size.first;
-    WPL_Size.second += wpl_size.second;
+	{//上锁
+		std::lock_guard<std::mutex> lock(*selectedFile.threadLock);
+		//将局部统计的 WPL_Size 合并到 文件的 WPL_Size 中
+		MergeWPL_Size(selectedFile.WPL_Size, selectedFile.dataBlockWPL_Size[dataBlockIndex]);
+	}//自动解锁
+}
+
+void HuffmanCode::MergeWPL_Size(pair<uintmax_t, BYTE>& targetWPL_Size, const pair<uintmax_t, BYTE>& sourceWPL_Size)
+{
+	targetWPL_Size.first += sourceWPL_Size.first;
+	targetWPL_Size.second += sourceWPL_Size.second;
 	//若填充比特数超过1字节
-	if (WPL_Size.second >= 8) {
-		WPL_Size.first -= WPL_Size.second / 8;
-        WPL_Size.second = WPL_Size.second % 8;
+	if (targetWPL_Size.second >= 8) {
+		targetWPL_Size.first -= targetWPL_Size.second / 8;
+		targetWPL_Size.second = targetWPL_Size.second % 8;
 	}
-	*/
 }
 
 void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode)

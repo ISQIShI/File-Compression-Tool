@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FCT.cpp" />
+    <ClCompile Include="SelectedFileInfo.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="FileService.cpp" />
     <ClCompile Include="HuffmanCode.cpp" />

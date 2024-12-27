@@ -42,9 +42,9 @@ public:
 	*/
 	
 	//获取文件某区域中 符号-频率表 (后两个参数用于控制文件读取范围,可以实现大文件分块读取)
-	static void GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t fileOffset = 0, size_t fileMapSize = 0);
-	//合并两个 符号-频率表 (表2合并到表1)
-	static void MergeSymbolFrequency(unordered_map<BYTE, size_t>& symbolFrequency1, unordered_map<BYTE, size_t>& symbolFrequency2);
+	static void GetSymbolFrequency(SelectedFileInfo& selectedFile,size_t dataBlockIndex ,size_t fileOffset = 0, size_t fileMapSize = 0);
+	//合并两个 符号-频率表 (source表合并到target表)
+	static void MergeSymbolFrequency(unordered_map<BYTE, size_t>& targetSymbolFrequency,const unordered_map<BYTE, size_t>& sourceSymbolFrequency);
 	//根据 符号-频率表 构建一颗哈夫曼树并返回根节点指针 输出WPL(即根据传入的符号-频率表进行压缩后数据的总长度)(可选)
 	static HuffmanNode* BuildHuffmanTree(const unordered_map<BYTE, size_t>& symbolFrequency,pair<uintmax_t, BYTE>* WPL_Size = nullptr);
 	//递归销毁一颗哈夫曼树
@@ -52,7 +52,9 @@ public:
 	//递归遍历哈夫曼树,可以根据一颗已经存在的哈夫曼树得到 符号-编码长度表 和 符号-编码表(可选)
     static void EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,HuffmanNode* rootNode,string code = "", unordered_map<BYTE, string>* symbolCode = nullptr);
 	//根据 符号-频率表 和 符号-编码长度表 求得WPL即压缩数据总大小
-	static void GetWPL( unordered_map<BYTE, size_t>& symbolFrequency,const vector<pair<BYTE, BYTE>>& codeLength, pair<uintmax_t, BYTE>& WPL_Size);
+	static void GetWPL(SelectedFileInfo& selectedFile,size_t dataBlockIndex,const vector<pair<BYTE, BYTE>>& codeLength);
+	//合并两个 WPL_Size (source合并到target)
+	static void MergeWPL_Size(pair<uintmax_t, BYTE>& targetWPL_Size, const pair<uintmax_t, BYTE>& sourceWPL_Size);
 	//根据 符号-编码长度表 构建 符号-范式编码表
 	static void GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode);
 
