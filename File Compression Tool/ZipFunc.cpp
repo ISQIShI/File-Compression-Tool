@@ -9,7 +9,7 @@
 void ZipFunc::StartZip(bool openMultiThread)
 {
 	//初始化线程池
-	size_t maxThreadAmount = 20;//临时占位 之后更改为用户设定的最大线程数
+	size_t maxThreadAmount = 1000;//临时占位 之后更改为用户设定的最大线程数
 	size_t availableThreadAmount = thread::hardware_concurrency();
 	ThreadPool threadPool(availableThreadAmount < maxThreadAmount ? availableThreadAmount : maxThreadAmount);
 	//开始压缩进行计时
@@ -225,23 +225,6 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			selectedIItemArray->Release();
 			fileOpenDialog->Release();
 			CoUninitialize();
-
-			size_t oldSelectedFileArrSize = selectedFileArr->size();
-			for (size_t i = 0; i < oldSelectedFileArrSize; ++i) {
-				//跳过文件
-				if (!(*selectedFileArr)[i].isFolder) continue;
-				//遍历文件夹下所有文件(夹)
-				for (const auto& entry : filesystem::recursive_directory_iterator((*selectedFileArr)[i].filePath)) {
-					if (entry.is_regular_file()) {
-						//文件插入数组
-						selectedFileArr->emplace_back(relative(entry.path(), (*selectedFileArr)[i].filePath.parent_path()), entry, false, file_size(entry));
-					}
-				}
-				//删除文件夹信息
-				selectedFileArr->erase(selectedFileArr->begin() + i);
-				//修正索引
-				--i;
-			}
 
 			//准备刷新列表数据
 			//删除所有行

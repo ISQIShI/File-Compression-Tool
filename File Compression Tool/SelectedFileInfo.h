@@ -52,8 +52,17 @@ struct SelectedFileInfo {
 	//mutex 互斥锁无法复制和移动,使用 unique_ptr 智能指针包装可以移动
 	//移动构造函数
 	SelectedFileInfo(SelectedFileInfo&& selectedFileInfo) noexcept
-		: fileName(move(selectedFileInfo.fileName)), filePath(move(selectedFileInfo.filePath)), isFolder(selectedFileInfo.isFolder), oldFileSize(selectedFileInfo.oldFileSize),
-		symbolFrequency(move(selectedFileInfo.symbolFrequency)), WPL_Size(selectedFileInfo.WPL_Size),threadLock(move(selectedFileInfo.threadLock)){}
+			: fileName(move(selectedFileInfo.fileName)), 
+			filePath(move(selectedFileInfo.filePath)), 
+			isFolder(selectedFileInfo.isFolder), 
+			oldFileSize(selectedFileInfo.oldFileSize),
+			dataBlockSize(selectedFileInfo.dataBlockSize),
+			dataBlockAmount(selectedFileInfo.dataBlockAmount),
+			dataBlocksymbolFrequency(move(selectedFileInfo.dataBlocksymbolFrequency)),
+			symbolFrequency(move(selectedFileInfo.symbolFrequency)),
+			WPL_Size(selectedFileInfo.WPL_Size),
+			dataBlockWPL_Size(move(selectedFileInfo.dataBlockWPL_Size)),
+			threadLock(move(selectedFileInfo.threadLock)){}
 	//移动赋值运算符
 	SelectedFileInfo& operator=(SelectedFileInfo&& selectedFileInfo) noexcept {
 		if (this != &selectedFileInfo) {
@@ -61,8 +70,12 @@ struct SelectedFileInfo {
 			filePath = move(selectedFileInfo.filePath);
 			isFolder = selectedFileInfo.isFolder;
 			oldFileSize = selectedFileInfo.oldFileSize;
+			dataBlockSize = selectedFileInfo.dataBlockSize;
+			dataBlockAmount = selectedFileInfo.dataBlockAmount;
+			dataBlocksymbolFrequency = move(selectedFileInfo.dataBlocksymbolFrequency);
 			symbolFrequency = move(selectedFileInfo.symbolFrequency);
 			WPL_Size = selectedFileInfo.WPL_Size;
+			dataBlockWPL_Size = move(selectedFileInfo.dataBlockWPL_Size);
 			threadLock = move(selectedFileInfo.threadLock);
 		}
 		return *this;

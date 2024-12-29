@@ -33,7 +33,10 @@ void FileService::ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showE
 
 void FileService::MapFile(MapFileInfo& mapFileInfo,bool readOnly)
 {
-	if ((mapFileInfo.fileOffset + mapFileInfo.fileMapSize) > file_size(mapFileInfo.fileName))ErrorMessageBox(NULL, _T("映射区域不在文件内"));
+	if ((mapFileInfo.fileOffset + mapFileInfo.fileMapSize) > file_size(mapFileInfo.fileName))
+	{
+		ErrorMessageBox(NULL, _T("映射区域不在文件内"));
+	}
 	static std::mutex fileMapMutex;
 	//使用内存映射方式读取文件，提高文件读取速度
 	//打开文件以获取句柄

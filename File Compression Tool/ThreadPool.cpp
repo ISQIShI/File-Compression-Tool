@@ -48,24 +48,31 @@ void ThreadPool::ShutDownThreadPool()
 
 void ThreadPool::DestroyThread(std::thread::id threadID)
 {
-	threadMutex.lock();
-	auto temp = find_if(workThreads.begin(), workThreads.end(), [threadID](const std::unique_ptr<ThreadInfo>& worker) { return worker->threadID == threadID; });
-	threadMutex.unlock();
-	if (temp == workThreads.end()) return;
+	ThreadInfo* threadinfo;
+	{
+		std::lock_guard<std::mutex> lock(threadMutex);
+		auto temp = find_if(workThreads.begin(), workThreads.end(), [threadID](const std::unique_ptr<ThreadInfo>& worker) { return worker->threadID == threadID; });
+		threadinfo = (*temp).get();
+		if (temp == workThreads.end()) return;
+	}
 	if (workThreads.size() <= 1)
 	{
 		ShutDownThreadPool();
 		return;
 	}
-    (*temp)->willTerminate = true;
+
+	threadinfo->willTerminate = true;
 	threadWaitTask.notify_all();
-	if ((*temp)->mThread && (*temp)->mThread->joinable()) {
-		(*temp)->mThread->join();
-		delete (*temp)->mThread;
+	if (threadinfo->mThread && threadinfo->mThread->joinable()) {
+		threadinfo->mThread->join();
+		delete threadinfo->mThread;
 	}
-	threadMutex.lock();
-	workThreads.erase(temp);
-	threadMutex.unlock();
+	{
+		std::lock_guard<std::mutex> lock(threadMutex);
+		auto temp = find_if(workThreads.begin(), workThreads.end(), [threadID](const std::unique_ptr<ThreadInfo>& worker) { return worker->threadID == threadID; });
+		workThreads.erase(temp);
+	}
+
 }
 
 ThreadInfo* ThreadPool::FindThread(std::thread::id threadID)
@@ -111,6 +118,7 @@ void ThreadPool::WaitTask(size_t taskID)
 	while (true) {
 		for (size_t i = 0; i < waitTasks.size(); ++i) {
 			if (waitTasks[i].first == taskID) {
+				if (!waitTasks[i].second)continue;
 				waitTasks[i].second->wait();
 				std::lock_guard<std::mutex> lock(waitTaskMutex);
 				//二次判断
