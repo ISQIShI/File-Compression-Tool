@@ -61,21 +61,32 @@ void ZipFunc::StartZip(bool openMultiThread)
 	//后台递归销毁哈夫曼树
 	threadPool.SubmitTask(2,false ,HuffmanCode::DestroyHuffmanTree, rootNode);
 	//5.写入压缩包首部
-	std::shared_future zipFileHeaderSize = threadPool.SubmitTask(3,false,FileService::WriteZipFileHeader,ref(*zipFile));
+	std::future zipFileHeaderSize = threadPool.SubmitTask(3, false, FileService::WriteZipFileHeader, ref(*zipFile));
 	//6.获取 全局符号-范式编码表
-	HuffmanCode::GetNormalSymbolCode(zipFile->codeLength, zipFile->symbolCode);
-	//等待第5步任务完成
+	std::future getNormalSymbolCode = threadPool.SubmitTask(4, false, HuffmanCode::GetNormalSymbolCode ,ref(zipFile->codeLength), ref(zipFile->symbolCode));
+	//7.注册回调函数
+	for (auto& selectedFile : *selectedFileArr) {
+		threadPool.RegisterCallBackFunc(selectedFile.fileID + 100, &ZipFunc::WriteSelectedFileData, this, ref(selectedFile), ref(threadPool));
+	}
+	//等待第5、6步任务完成
 	zipFile->newFileSize += zipFileHeaderSize.get();
+	getNormalSymbolCode.wait();
 	//中间计时1
 	auto middleTime = std::chrono::high_resolution_clock::now();
-	//7.正式开始写入文件
-	size_t fileFlag = 100;
+	//8.利用 全局的符号-编码长度表 和各数据块的 符号-频率 表,计算各非空文件压缩后各数据块数据大小和填补的比特数
 	for (auto& selectedFile : *selectedFileArr) {
-		threadPool.SubmitTask(4, true,&ZipFunc::WriteSelectedFileData, this, ref(selectedFile),ref(threadPool), fileFlag);
-		fileFlag += 10;
+		if (selectedFile.oldFileSize) {
+			for (size_t i = 0; i < selectedFile.dataBlockAmount; ++i) {
+				threadPool.SubmitTask(selectedFile.fileID + 100, true, HuffmanCode::GetWPL, ref(selectedFile), i, ref(zipFile->codeLength));
+			}
+		}
+	}
+	int a;//查看等待任务列表
+	while (threadPool.GetTaskAmount() || threadPool.GetWorkThreadAmount()) {
+		this_thread::yield();
 	}
 	//等待文件写入完成
-	threadPool.WaitTask(4);
+	threadPool.WaitTask(6);
 	//删除同名文件，更名
 	if ((zipFile->zipFilePath != zipFile->tempZipFilePath) && exists(zipFile->zipFilePath)) {
 		remove(zipFile->zipFilePath);
@@ -91,15 +102,8 @@ void ZipFunc::StartZip(bool openMultiThread)
 	TestMessageBox(hwnd_WndProc, tempTCHAR, _T("压缩完成"));
 }
 
-void ZipFunc::WriteSelectedFileData(SelectedFileInfo& selectedFile, ThreadPool& threadPool,size_t fileFlag)
+void ZipFunc::WriteSelectedFileData(SelectedFileInfo& selectedFile, ThreadPool& threadPool)
 {
-	//利用 全局的符号-编码长度表 和各数据块的 符号-频率 表,计算各非空文件压缩后各数据块数据大小和填补的比特数
-	if (selectedFile.oldFileSize) {
-		for (size_t i = 0; i < selectedFile.dataBlockAmount; ++i) {
-			threadPool.SubmitTask(fileFlag, true, HuffmanCode::GetWPL, ref(selectedFile), i, zipFile->codeLength);
-		}
-	}
-	threadPool.WaitTask(fileFlag);
 	static std::mutex zipFileSizeMutex;
 	uintmax_t offset;
 	{//上锁
@@ -116,25 +120,19 @@ void ZipFunc::WriteSelectedFileData(SelectedFileInfo& selectedFile, ThreadPool& 
 	pair<uintmax_t, BYTE> tempWPL_Size(0, 0);
 	pair<uintmax_t, BYTE> lastWPL_Size(0, 0);
 	size_t tempOffset;
-	++fileFlag;
 	for (size_t i = 0; i < selectedFile.dataBlockAmount - 1; ++i) {
 		HuffmanCode::MergeWPL_Size(tempWPL_Size,selectedFile.dataBlockWPL_Size[i]);
 		tempOffset = offset + lastWPL_Size.first;
 		selectedFile.dataBlockWPL_Size[i].first = tempWPL_Size.first - lastWPL_Size.first;
 		selectedFile.dataBlockWPL_Size[i].second = tempWPL_Size.second;
-		/*if (lastWPL_Size.second) {
-			tempOffset -= 1;
-			selectedFile.dataBlockWPL_Size[i].first += 1;
-		}*/
-		threadPool.SubmitTask(fileFlag,true ,FileService::ZipFile, ref(selectedFile), ref(*zipFile),i ,i * selectedFile.dataBlockSize, selectedFile.dataBlockSize + 7, tempOffset, selectedFile.dataBlockWPL_Size[i].first);
+		threadPool.SubmitTask(6,true ,FileService::ZipFile, ref(selectedFile), ref(*zipFile),i ,i * selectedFile.dataBlockSize, selectedFile.dataBlockSize + 7, tempOffset, selectedFile.dataBlockWPL_Size[i].first);
 		lastWPL_Size = tempWPL_Size;
 	}
 	HuffmanCode::MergeWPL_Size(tempWPL_Size, selectedFile.dataBlockWPL_Size[selectedFile.dataBlockAmount - 1]);
 	tempOffset = offset + lastWPL_Size.first;
 	selectedFile.dataBlockWPL_Size[selectedFile.dataBlockAmount - 1].first = tempWPL_Size.first - lastWPL_Size.first;
 	selectedFile.dataBlockWPL_Size[selectedFile.dataBlockAmount - 1].second = tempWPL_Size.second;
-	threadPool.SubmitTask(fileFlag,true ,FileService::ZipFile, ref(selectedFile), ref(*zipFile), selectedFile.dataBlockAmount - 1,(selectedFile.dataBlockAmount - 1)* selectedFile.dataBlockSize, 0, tempOffset, selectedFile.dataBlockWPL_Size[selectedFile.dataBlockAmount - 1].first);
-	threadPool.WaitTask(fileFlag);
+	threadPool.SubmitTask(6,true ,FileService::ZipFile, ref(selectedFile), ref(*zipFile), selectedFile.dataBlockAmount - 1,(selectedFile.dataBlockAmount - 1)* selectedFile.dataBlockSize, 0, tempOffset, selectedFile.dataBlockWPL_Size[selectedFile.dataBlockAmount - 1].first);
 }
 
 ATOM ZipFunc::RegisterWndClass()
@@ -407,6 +405,7 @@ LRESULT ZipFunc::WM_CREATE_WndProc(){
 		delete SelectedFileInfo::globalSymbolFrequency;
 		SelectedFileInfo::globalSymbolFrequency = new unordered_map<BYTE, size_t>;
 	}
+	SelectedFileInfo::selectedFileAmount = 0;
 	//初始化压缩文件信息
 	if (zipFile) {
 		delete zipFile;

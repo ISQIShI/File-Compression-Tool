@@ -19,8 +19,10 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 			ErrorMessageBox(NULL, _T("任务信息为空"));
 			continue;
 		}
+		workThreadAmount.fetch_add(1);
 		//执行任务
 		threadinfo->taskInfo->taskFunc();
+		
 		if (threadinfo->taskInfo->needWait) {
 			//如果执行完的任务需要等待，则将具有该任务ID的等待任务数减一
 			std::shared_lock<std::shared_mutex> lock(waitTaskMutex);
@@ -28,16 +30,35 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 				//若具有该任务ID的等待任务数为0，发送通知
 				lock.unlock();
 				std::unique_lock<std::shared_mutex> uniquelock(waitTaskMutex);
-				waitTasks.at(threadinfo->taskInfo->taskID).second.notify_all();
 				//二次确定后移除任务
 				if (waitTasks.at(threadinfo->taskInfo->taskID).first.load() == 0)
 				{
+					waitTasks.at(threadinfo->taskInfo->taskID).second.notify_all();
 					waitTasks.erase(threadinfo->taskInfo->taskID);
+					uniquelock.unlock();
+					//查看该任务ID是否关联有回调函数
+					std::unique_lock<std::mutex> callbackfunclock(callBackFuncMutex);
+					auto it = callBackFuncs.find(threadinfo->taskInfo->taskID);
+					if (it != callBackFuncs.end()) {
+						delete threadinfo->taskInfo;
+						threadinfo->taskInfo = it->second;
+						callBackFuncs.erase(it);
+						callbackfunclock.unlock();
+						if (!threadinfo->taskInfo) {
+							ErrorMessageBox(NULL, _T("回调任务信息为空"));
+							continue;
+						}
+						//执行任务
+						threadinfo->taskInfo->taskFunc();
+					}
+					
 				}
 			}
 		}
+
 		delete threadinfo->taskInfo;
 		threadinfo->taskInfo = nullptr;
+		workThreadAmount.fetch_sub(1);
 	}
 }
 
@@ -45,7 +66,7 @@ void ThreadPool::ShutDownThreadPool()
 {
 	{//修改运行标志，通知所有线程
 		std::unique_lock<std::mutex> lock(queueMutex);
-		isRunning = false;
+		isRunning.store(false);
 	}
 	threadWaitTask.notify_all(); // 唤醒所有线程
 	for (auto& worker : workThreads) {

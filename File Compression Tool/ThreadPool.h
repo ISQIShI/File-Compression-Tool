@@ -19,6 +19,7 @@ struct TaskInfo {
 		:taskID(taskid), needWait(needwait), taskFunc(std::move(taskfunc)) {
 	}
 };
+
 struct ThreadInfo {
 	std::thread* mThread;//指向关联线程的指针
 	std::atomic<bool> willTerminate;//线程是否要终止
@@ -31,6 +32,7 @@ struct ThreadInfo {
 };
 
 class ThreadPool {
+	std::atomic<size_t> workThreadAmount;//工作线程数量
 	std::vector<std::unique_ptr<ThreadInfo>> workThreads;//工作线程容器
 	std::queue<TaskInfo*> taskQueue;//任务队列
 	std::mutex queueMutex;//任务队列的互斥锁
@@ -38,6 +40,8 @@ class ThreadPool {
 	std::condition_variable threadWaitTask;//条件变量,用于使线程休眠等待任务
 	std::shared_mutex waitTaskMutex;//等待任务的互斥锁
 	std::unordered_map<size_t,std::pair<std::atomic<size_t>,std::condition_variable_any >> waitTasks;
+	std::unordered_map<size_t, TaskInfo*> callBackFuncs;//回调函数容器
+	std::mutex callBackFuncMutex;//回调函数的互斥锁
 	std::atomic<bool> isRunning;//线程池运行状态
 
 	//禁止拷贝构造和赋值操作
@@ -83,7 +87,7 @@ public:
 		}
 	}
 
-	// 提交任务到线程池
+	//提交任务到线程池
 	template <class F, class... Args>
 	auto SubmitTask(size_t taskID,bool needWait,F&& f, Args&&... args)-> std::future<std::invoke_result_t<F, Args...>>
 	{//使用尾置返回类型和自动推导函数返回类型
@@ -116,14 +120,60 @@ public:
 
 		return result; //返回future对象，即任务的返回值
 	}
+	//提交任务到线程池--提交任务信息
+	template <class F, class... Args>
+	void SubmitTask(TaskInfo * taskInfo)
+	{
+		{//进入临界区，保护任务队列
+			std::lock_guard<std::mutex> lock(queueMutex);
+			// 如果线程池已经停止，抛出异常
+			if (!isRunning)throw std::runtime_error("线程池已经停止运行");
+			// 将任务加入队列
+			taskQueue.emplace(taskInfo);
+		}
+		//通知一个线程有新任务
+		threadWaitTask.notify_one();
+	}
+
 	//停止线程池并等待所有线程完成
 	void ShutDownThreadPool();
+
 	//根据线程ID销毁一个线程池内已有的线程
 	void DestroyThread(std::thread::id threadID);
+
 	//根据线程ID查找线程是否存在线程池中
 	ThreadInfo* FindThread(std::thread::id threadID);
+
 	//查找任务队列中是否存在某个任务
     bool FindTask(size_t taskID);
+
 	//阻塞调用方线程，直到具有 该任务ID 的任务全部完成，适用于需要等待的同ID的任务很多时
 	void WaitTask(size_t taskID);
+
+	//注册回调函数
+	template <class F, class... Args>
+	auto RegisterCallBackFunc(size_t taskID, F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>>
+	{//使用尾置返回类型和自动推导函数返回类型
+		using ReturnType = std::invoke_result_t<F, Args...>;
+		//将任务封装为一个可调用的std::function对象
+		auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+			std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+		);
+		std::future<ReturnType> result = task->get_future(); //获取任务函数的返回值future
+		{ // 进入临界区，保护回调函数容器
+			std::lock_guard<std::mutex> lock(callBackFuncMutex);
+			// 如果线程池已经停止，抛出异常
+			if (!isRunning)throw std::runtime_error("线程池已经停止运行");
+			// 将任务加入容器
+			callBackFuncs.emplace(taskID,new TaskInfo(taskID, false, [task]() { (*task)(); }));
+		}
+		return result; //返回future对象，即任务的返回值
+	}
+
+	//获取线程总数
+	size_t GetThreadTotalAmount()const { return workThreads.size(); }
+	//获取工作线程数
+    size_t GetWorkThreadAmount()const { return workThreadAmount.load(); }
+	//获取任务队列中的任务数
+    size_t GetTaskAmount()const { return taskQueue.size(); }
 };

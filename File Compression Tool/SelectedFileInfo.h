@@ -10,7 +10,12 @@ using namespace filesystem;
 
 
 struct SelectedFileInfo {
+	//全局符号-频率表
 	static unordered_map<BYTE, size_t> * globalSymbolFrequency;
+	//总文件数(不计入文件夹)
+	static size_t selectedFileAmount;
+	//文件序号
+	size_t fileID = 0;
 	//文件相对路径(用于还原文件夹结构)
 	path fileName;
 	//文件绝对路径
@@ -48,11 +53,17 @@ struct SelectedFileInfo {
 		//初始化存放数据块信息的 vector 容器
 		dataBlocksymbolFrequency.resize(dataBlockAmount);
 		dataBlockWPL_Size.resize(dataBlockAmount);
+		//设定文件序号
+		if (!isFolder){
+			++selectedFileAmount;
+			fileID = selectedFileAmount;
+		}
 	}
 	//mutex 互斥锁无法复制和移动,使用 unique_ptr 智能指针包装可以移动
 	//移动构造函数
 	SelectedFileInfo(SelectedFileInfo&& selectedFileInfo) noexcept
-			: fileName(move(selectedFileInfo.fileName)), 
+			:fileID(selectedFileInfo.fileID),
+			fileName(move(selectedFileInfo.fileName)), 
 			filePath(move(selectedFileInfo.filePath)), 
 			isFolder(selectedFileInfo.isFolder), 
 			oldFileSize(selectedFileInfo.oldFileSize),
@@ -66,6 +77,7 @@ struct SelectedFileInfo {
 	//移动赋值运算符
 	SelectedFileInfo& operator=(SelectedFileInfo&& selectedFileInfo) noexcept {
 		if (this != &selectedFileInfo) {
+			fileID = selectedFileInfo.fileID;
 			fileName = move(selectedFileInfo.fileName);
 			filePath = move(selectedFileInfo.filePath);
 			isFolder = selectedFileInfo.isFolder;
