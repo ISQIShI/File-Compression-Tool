@@ -9,7 +9,7 @@
 void ZipFunc::StartZip(bool openMultiThread)
 {
 	//初始化线程池
-	size_t maxThreadAmount = 1000;//临时占位 之后更改为用户设定的最大线程数
+	size_t maxThreadAmount = 20;//临时占位 之后更改为用户设定的最大线程数
 	size_t availableThreadAmount = thread::hardware_concurrency();
 	ThreadPool threadPool(availableThreadAmount < maxThreadAmount ? availableThreadAmount : maxThreadAmount);
 	//开始压缩进行计时
