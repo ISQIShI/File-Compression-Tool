@@ -8,7 +8,7 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 		{ //进入临界区，保护任务队列(共享数据)被正常读写
 			std::unique_lock<std::mutex> lock(queueMutex);
 			//线程休眠，直到有可用任务或线程池停止运行或线程被终止再唤醒
-			threadWaitTask.wait(lock, [this, threadinfo] {return !isRunning || threadinfo->willTerminate ||!taskQueue.empty();});
+			threadWaitTask.wait(lock, [this, threadinfo] {return !isRunning || threadinfo->willTerminate || !taskQueue.empty(); });
 			//如果线程被终止或者线程池停止且没有任务，退出线程
 			if (threadinfo->willTerminate || (!isRunning && taskQueue.empty()))return;
 			//从队列中取出任务
@@ -16,46 +16,36 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 			taskQueue.pop();
 		}
 		if (!threadinfo->taskInfo) {
-			ErrorMessageBox(NULL, _T("任务信息为空"));
+			throw std::runtime_error("任务信息为空");
 			continue;
 		}
 		workThreadAmount.fetch_add(1);
 		//执行任务
 		threadinfo->taskInfo->taskFunc();
-		
+
 		if (threadinfo->taskInfo->needWait) {
 			//如果执行完的任务需要等待，则将具有该任务ID的等待任务数减一
 			std::shared_lock<std::shared_mutex> lock(waitTaskMutex);
-			if (waitTasks.at(threadinfo->taskInfo->taskID).first.fetch_sub(1) == 1) {
-				//若具有该任务ID的等待任务数为0，发送通知
-				lock.unlock();
-				std::unique_lock<std::shared_mutex> uniquelock(waitTaskMutex);
-				//二次确定后移除任务
-				if (waitTasks.at(threadinfo->taskInfo->taskID).first.load() == 0)
-				{
-					waitTasks.at(threadinfo->taskInfo->taskID).second.notify_all();
-					waitTasks.erase(threadinfo->taskInfo->taskID);
-					uniquelock.unlock();
-					//查看该任务ID是否关联有回调函数
-					std::unique_lock<std::mutex> callbackfunclock(callBackFuncMutex);
-					auto it = callBackFuncs.find(threadinfo->taskInfo->taskID);
-					if (it != callBackFuncs.end()) {
-						delete threadinfo->taskInfo;
-						threadinfo->taskInfo = it->second;
-						callBackFuncs.erase(it);
-						callbackfunclock.unlock();
-						if (!threadinfo->taskInfo) {
-							ErrorMessageBox(NULL, _T("回调任务信息为空"));
-							continue;
-						}
-						//执行任务
-						threadinfo->taskInfo->taskFunc();
+			auto amount = waitTasks.at(threadinfo->taskInfo->taskID).first.fetch_sub(1);
+			if (amount <= 2) {
+				if (amount == 1) {
+					//若具有该任务ID的等待任务数为0，发送通知
+					lock.unlock();
+					std::unique_lock<std::shared_mutex> uniquelock(waitTaskMutex);
+					//二次确定后移除任务
+					if (waitTasks.at(threadinfo->taskInfo->taskID).first.load() == 0) {
+						waitTasks.at(threadinfo->taskInfo->taskID).second.notify_all();
+						waitTasks.erase(threadinfo->taskInfo->taskID);
 					}
-					
+				}
+				//查看该任务ID是否关联有回调函数
+				std::unique_lock<std::mutex> callbackfunclock(callBackFuncMutex);
+				if (callBackFuncs.find(threadinfo->taskInfo->taskID) != callBackFuncs.end()) {
+					SubmitTask(callBackFuncs.at(threadinfo->taskInfo->taskID));
+					callBackFuncs.erase(threadinfo->taskInfo->taskID);
 				}
 			}
 		}
-
 		delete threadinfo->taskInfo;
 		threadinfo->taskInfo = nullptr;
 		workThreadAmount.fetch_sub(1);

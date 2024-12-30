@@ -49,23 +49,6 @@ class ThreadPool {
 	ThreadPool& operator=(const ThreadPool&) = delete;
 
 public:
-	void ErrorMessageBox(const HWND& hwnd, const TCHAR* msg, bool showErrorCode = true)
-	{
-		//创建字符串用于接收错误代码
-		TCHAR errorCode[20] = _T("");
-		if (showErrorCode) _stprintf_s(errorCode, _T("\n错误代码:%lu"), GetLastError());
-		//将msg内容与错误代码拼接起来
-		size_t length = _tcslen(msg) + _tcslen(errorCode) + 1;
-		TCHAR* finalMsg = new TCHAR[length];
-		_stprintf_s(finalMsg, length, _T("%s%s"), msg, errorCode);
-		//弹出错误弹窗
-		MessageBox(hwnd, finalMsg, _T("错误信息"), MB_OK | MB_ICONERROR | MB_TASKMODAL);
-		//销毁使用new开辟的空间
-		delete[]finalMsg;
-		//退出程序
-		exit(GetLastError());
-	}
-
 	//析构函数，自动停止线程池
 	~ThreadPool() {	ShutDownThreadPool();}
 
@@ -121,7 +104,6 @@ public:
 		return result; //返回future对象，即任务的返回值
 	}
 	//提交任务到线程池--提交任务信息
-	template <class F, class... Args>
 	void SubmitTask(TaskInfo * taskInfo)
 	{
 		{//进入临界区，保护任务队列
@@ -135,25 +117,21 @@ public:
 		threadWaitTask.notify_one();
 	}
 
-	//停止线程池并等待所有线程完成
-	void ShutDownThreadPool();
-
-	//根据线程ID销毁一个线程池内已有的线程
-	void DestroyThread(std::thread::id threadID);
-
-	//根据线程ID查找线程是否存在线程池中
-	ThreadInfo* FindThread(std::thread::id threadID);
-
-	//查找任务队列中是否存在某个任务
-    bool FindTask(size_t taskID);
-
-	//阻塞调用方线程，直到具有 该任务ID 的任务全部完成，适用于需要等待的同ID的任务很多时
-	void WaitTask(size_t taskID);
-
 	//注册回调函数
 	template <class F, class... Args>
-	auto RegisterCallBackFunc(size_t taskID, F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>>
+	auto RegisterCallBackFunc(size_t taskID, bool needWait,F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>>
 	{//使用尾置返回类型和自动推导函数返回类型
+		if (needWait) {
+			std::shared_lock<std::shared_mutex> lock(waitTaskMutex);
+			if (waitTasks.find(taskID) == waitTasks.end()) {
+				lock.unlock();
+				std::unique_lock<std::shared_mutex> uniquelock(waitTaskMutex);
+				waitTasks[taskID].first.fetch_add(1);
+			}
+			else {
+				waitTasks.at(taskID).first.fetch_add(1);
+			}
+		}
 		using ReturnType = std::invoke_result_t<F, Args...>;
 		//将任务封装为一个可调用的std::function对象
 		auto task = std::make_shared<std::packaged_task<ReturnType()>>(
@@ -164,16 +142,34 @@ public:
 			std::lock_guard<std::mutex> lock(callBackFuncMutex);
 			// 如果线程池已经停止，抛出异常
 			if (!isRunning)throw std::runtime_error("线程池已经停止运行");
+			if(callBackFuncs.find(taskID) != callBackFuncs.end())throw std::runtime_error("该任务ID的回调函数已注册");
 			// 将任务加入容器
-			callBackFuncs.emplace(taskID,new TaskInfo(taskID, false, [task]() { (*task)(); }));
+			callBackFuncs.emplace(taskID,new TaskInfo(taskID, needWait, [task]() { (*task)(); }));
 		}
 		return result; //返回future对象，即任务的返回值
 	}
 
 	//获取线程总数
 	size_t GetThreadTotalAmount()const { return workThreads.size(); }
+
 	//获取工作线程数
     size_t GetWorkThreadAmount()const { return workThreadAmount.load(); }
+
 	//获取任务队列中的任务数
     size_t GetTaskAmount()const { return taskQueue.size(); }
+
+	//停止线程池并等待所有线程完成
+	void ShutDownThreadPool();
+
+	//根据线程ID销毁一个线程池内已有的线程
+	void DestroyThread(std::thread::id threadID);
+
+	//根据线程ID查找线程是否存在线程池中
+	ThreadInfo* FindThread(std::thread::id threadID);
+
+	//查找任务队列中是否存在某个任务
+	bool FindTask(size_t taskID);
+
+	//阻塞调用方线程，直到具有 该任务ID 的任务全部完成，适用于需要等待的同ID的任务很多时
+	void WaitTask(size_t taskID);
 };
