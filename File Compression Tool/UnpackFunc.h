@@ -2,15 +2,25 @@
 #include"MainWnd.h"
 #include"FileInfo.h"
 #include"ZipFileInfo.h"
-#include <stack>
+
+enum class UnpackFuncWndChildID :unsigned char {
+	buttonConfirmID,
+	buttonCancelID,
+	buttonBrowseID,
+	radioButtonAllFilesID,
+	radioButtonSelectedFilesID,
+	editFileNameID
+};
 
 class UnpackFunc :public MyWnds{
 	//存储压缩包内部文件信息
 	vector<vector<InternalFileInfo>>* internalFileArr = new vector<vector<InternalFileInfo>>;
 	//存储压缩包的信息
 	ZipFileInfo* zipFile = new ZipFileInfo;
+	//解压缩全部文件
+	bool willUnpackAllFiles = true;
 	//--------------------------执行解压缩功能的函数----------------------------
-
+	void StartUnpack();
 	//--------------------------子类重写的窗口函数----------------------------
 	//注册窗口类
 	ATOM RegisterWndClass() override;
@@ -19,6 +29,8 @@ class UnpackFunc :public MyWnds{
 
 	LRESULT WM_COMMAND_WndProc() override;
 	LRESULT WM_PAINT_WndProc() override;
+	//绘制单选框控件
+	LRESULT WM_CTLCOLORSTATIC_WndProc()override;
 	//创建窗口时顺带执行的操作
 	LRESULT WM_CREATE_WndProc() override;
 	//关闭窗口
@@ -27,12 +39,15 @@ class UnpackFunc :public MyWnds{
 	LRESULT WM_DESTROY_WndProc() override;
 	//======================================================================
 
+	void ClickConfirmButton();
+	void ClickBrowseButton();
+
 	//采用单例设计理念，窗口类只能实例化一个对象
 	UnpackFunc() {
 		internalFileArr->resize(1);
 		isModalDialog = MainWnd::GetMainWnd().GetWndHwnd();
 		wndWidth = 1000;
-		wndHeight = 650;
+		wndHeight = 205;
 
 	} //禁止外部构造
 	~UnpackFunc() {
@@ -45,6 +60,8 @@ class UnpackFunc :public MyWnds{
 public:
 	//当前文件夹深度
 	size_t folderIndex = 0;
+	//存储目标压缩路径
+	path targetPath;
 	static UnpackFunc& GetUnpackFunc() {
 		static UnpackFunc unpackFunc;
 		return unpackFunc;

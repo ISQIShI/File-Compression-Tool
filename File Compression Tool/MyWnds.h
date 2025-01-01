@@ -56,6 +56,10 @@ protected:
 	virtual LRESULT WM_CTLCOLORSTATIC_WndProc();
 	//绘制窗口更新区域
 	virtual LRESULT WM_PAINT_WndProc();
+	//擦除窗口背景
+	virtual LRESULT WM_ERASEBKGND_WndProc();
+	//绘制按钮控件
+	virtual LRESULT WM_CTLCOLORBTN_WndProc();
 	//按下鼠标左键
 	virtual LRESULT WM_LBUTTONDOWN_WndProc();
 	//松开鼠标左键

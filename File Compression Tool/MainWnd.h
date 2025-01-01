@@ -14,6 +14,7 @@ enum MainWndChildID :unsigned char {
 	firstPopUpMenuOptionID_ButtonUnpack_ToolBar,
 	secondPopUpMenuOptionID_ButtonUnpack_ToolBar,
 	thirdPopUpMenuOptionID_ButtonUnpack_ToolBar,
+	fourthPopUpMenuOptionID_ButtonUnpack_ToolBar,
 	//文件列表
 	fileListID,
 };

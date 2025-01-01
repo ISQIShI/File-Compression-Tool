@@ -267,9 +267,10 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 					//创建下拉菜单(为static变量，只创建一次)
 					static HMENU hMenu = CreatePopupMenu();
 					if (!GetMenuItemCount(hMenu)) {
-						AppendMenu(hMenu, MF_STRING, firstPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("选项 1"));
-						AppendMenu(hMenu, MF_STRING, secondPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("选项 2"));
-						AppendMenu(hMenu, MF_STRING, thirdPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("选项 3"));
+						AppendMenu(hMenu, MF_STRING, firstPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("解压到此处"));
+						AppendMenu(hMenu, MF_STRING, secondPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("智能解压到此处"));
+						AppendMenu(hMenu, MF_STRING, thirdPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("解压到桌面"));
+						AppendMenu(hMenu, MF_STRING, fourthPopUpMenuOptionID_ButtonUnpack_ToolBar, _T("智能解压到桌面"));
 					}
 					// 转换为屏幕坐标
 					MapWindowPoints(lpnmhdr->hwndFrom, HWND_DESKTOP, (LPPOINT)&rc, 2);
@@ -282,15 +283,26 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 					// 处理菜单命令
 					if (choice) {
 						switch (choice) {
-						case firstPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("选项 1 被点击"), _T("信息"), MB_OK);
+						case firstPopUpMenuOptionID_ButtonUnpack_ToolBar: {
+							UnpackFunc::GetUnpackFunc().targetPath = UnpackFunc::GetUnpackFunc().GetZipFilePath();
+
 							break;
-						case secondPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("选项 2 被点击"), _T("信息"), MB_OK);
+						}
+						case secondPopUpMenuOptionID_ButtonUnpack_ToolBar: {
+							UnpackFunc::GetUnpackFunc().targetPath = UnpackFunc::GetUnpackFunc().GetZipFilePath();
+
 							break;
-						case thirdPopUpMenuOptionID_ButtonUnpack_ToolBar:
-							MessageBox(hwnd_WndProc, _T("选项 3 被点击"), _T("信息"), MB_OK);
+						}
+						case thirdPopUpMenuOptionID_ButtonUnpack_ToolBar: {
+							UnpackFunc::GetUnpackFunc().targetPath.assign("C:\\Users\\30828\\Desktop");
+
 							break;
+						}
+						case fourthPopUpMenuOptionID_ButtonUnpack_ToolBar: {
+							UnpackFunc::GetUnpackFunc().targetPath.assign("C:\\Users\\30828\\Desktop");
+
+							break;
+						}
 						}
 					}
 				}

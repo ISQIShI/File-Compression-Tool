@@ -91,6 +91,10 @@ LRESULT CALLBACK MyWnds::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return WM_CTLCOLORSTATIC_WndProc();
 	case WM_PAINT://绘制窗口更新区域
 		return WM_PAINT_WndProc();
+	case WM_ERASEBKGND://擦除窗口背景
+		return WM_ERASEBKGND_WndProc();
+	case WM_CTLCOLORBTN://绘制按钮控件
+		return WM_CTLCOLORBTN_WndProc();
 	case WM_LBUTTONDOWN://按下鼠标左键
 		return WM_LBUTTONDOWN_WndProc();
 	case WM_LBUTTONUP://松开鼠标左键
@@ -144,6 +148,16 @@ LRESULT MyWnds::WM_CTLCOLORSTATIC_WndProc(){
 }
 
 LRESULT MyWnds::WM_PAINT_WndProc(){
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
+LRESULT MyWnds::WM_ERASEBKGND_WndProc()
+{
+	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
+}
+
+LRESULT MyWnds::WM_CTLCOLORBTN_WndProc()
+{
 	return DefWindowProc(hwnd_WndProc, uMsg_WndProc, wParam_WndProc, lParam_WndProc);
 }
 

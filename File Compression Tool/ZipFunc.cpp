@@ -6,7 +6,7 @@
 #include <ShObjIdl_core.h>
 #include <shtypes.h>
 
-void ZipFunc::StartZip(bool openMultiThread)
+void ZipFunc::StartZip()
 {
 	//初始化线程池
 	size_t maxThreadAmount = 20;//临时占位 之后更改为用户设定的最大线程数

@@ -29,7 +29,7 @@ class ZipFunc :public MyWnds{
 	//存储压缩包的信息
 	ZipFileInfo *zipFile = new ZipFileInfo;
 	//--------------------------执行压缩功能的函数----------------------------
-	void StartZip(bool openMultiThread = false);
+	void StartZip();
 	void WriteSelectedFileData(SelectedFileInfo & selectedFile, ThreadPool & threadPool);
 	//--------------------------子类重写的窗口函数----------------------------
 	//注册窗口类
