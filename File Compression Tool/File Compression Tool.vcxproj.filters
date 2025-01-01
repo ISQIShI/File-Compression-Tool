@@ -46,8 +46,11 @@
     <ClCompile Include="ZipFunc.cpp">
       <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
-    <ClCompile Include="SelectedFileInfo.cpp">
+    <ClCompile Include="FileInfo.cpp">
       <Filter>Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="UnpackFunc.cpp">
+      <Filter>ServiceImpl\WindowBuilderServiceImpl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -72,11 +75,14 @@
     <ClInclude Include="ZipFunc.h">
       <Filter>Service\WindowBuilderService</Filter>
     </ClInclude>
-    <ClInclude Include="SelectedFileInfo.h">
+    <ClInclude Include="FileInfo.h">
       <Filter>Entity</Filter>
     </ClInclude>
     <ClInclude Include="ZipFileInfo.h">
       <Filter>Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="UnpackFunc.h">
+      <Filter>Service\WindowBuilderService</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

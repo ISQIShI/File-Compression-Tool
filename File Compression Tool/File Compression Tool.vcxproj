@@ -136,23 +136,25 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FCT.cpp" />
-    <ClCompile Include="SelectedFileInfo.cpp" />
+    <ClCompile Include="FileInfo.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="FileService.cpp" />
     <ClCompile Include="HuffmanCode.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MainWnd.cpp" />
     <ClCompile Include="MyWnds.cpp" />
+    <ClCompile Include="UnpackFunc.cpp" />
     <ClCompile Include="ZipFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SelectedFileInfo.h" />
+    <ClInclude Include="FileInfo.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="FileService.h" />
     <ClInclude Include="HuffmanCode.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MainWnd.h" />
     <ClInclude Include="MyWnds.h" />
+    <ClInclude Include="UnpackFunc.h" />
     <ClInclude Include="ZipFileInfo.h" />
     <ClInclude Include="ZipFunc.h" />
   </ItemGroup>

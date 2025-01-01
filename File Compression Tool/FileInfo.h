@@ -9,21 +9,28 @@ using namespace std;
 using namespace filesystem;
 
 
-struct SelectedFileInfo {
+struct FileInfo {
+	//文件类型(0为文件,1为文件夹)
+	bool isFolder;
+	//文件相对路径(用于还原文件夹结构)
+	path fileName;
+	//原文件大小(单位为字节)
+	uintmax_t oldFileSize;
+	//压缩后文件大小(字节)，以及填补的比特数(bit)
+	pair<uintmax_t, BYTE> WPL_Size;
+	FileInfo(){}
+	FileInfo(bool isfolder,const path& name,uintmax_t oldfilesize,const pair<uintmax_t, BYTE>& wpl_size):isFolder(isfolder),fileName(name),oldFileSize(oldfilesize),WPL_Size(wpl_size){}
+};
+
+struct SelectedFileInfo : public FileInfo {
 	//全局符号-频率表
 	static unordered_map<BYTE, size_t> * globalSymbolFrequency;
 	//总文件数(不计入文件夹)
 	static size_t selectedFileAmount;
 	//文件序号
 	size_t fileID = 0;
-	//文件相对路径(用于还原文件夹结构)
-	path fileName;
 	//文件绝对路径
 	path filePath;
-	//文件类型(0为文件,1为文件夹)
-	bool isFolder;
-	//原文件大小(单位为字节)
-	uintmax_t oldFileSize;
 	//当前文件的符号-频率表
 	unordered_map<BYTE, size_t> symbolFrequency;
 	//文件被划分的数据块的基准大小
@@ -32,14 +39,13 @@ struct SelectedFileInfo {
 	UINT dataBlockAmount;
 	//文件中每数据块的符号频率表
 	vector<unordered_map<BYTE, size_t>> dataBlocksymbolFrequency;
-	//压缩后文件大小(字节)，以及填补的比特数(bit)
-	pair<uintmax_t, BYTE> WPL_Size;
 	//文件中每数据块 压缩后文件大小(字节)，以及填补的比特数(bit)
 	vector<pair<uintmax_t, BYTE>> dataBlockWPL_Size;
 	//线程锁,保护共享数据
 	unique_ptr<std::mutex> threadLock;
 	//构造函数
-	SelectedFileInfo(const path& name, const path& filepath, bool isfolder, uintmax_t oldfilesize) :fileName(name), filePath(filepath), isFolder(isfolder), oldFileSize(oldfilesize), WPL_Size(0, 0), threadLock(std::make_unique<std::mutex>()) {
+	SelectedFileInfo(const path& name, const path& filepath, bool isfolder, uintmax_t oldfilesize) :
+		FileInfo(isfolder,name, oldfilesize,{0,0}), filePath(filepath), threadLock(std::make_unique<std::mutex>()) {
 		//根据文件大小划分数据块大小
 		size_t temp = 1024 * 1024;//初始设定1MB
 		if (oldFileSize <= temp) { dataBlockSize = 128 * 1024; }//0-1MB 设定数据块为128KB
@@ -62,16 +68,13 @@ struct SelectedFileInfo {
 	//mutex 互斥锁无法复制和移动,使用 unique_ptr 智能指针包装可以移动
 	//移动构造函数
 	SelectedFileInfo(SelectedFileInfo&& selectedFileInfo) noexcept
-			:fileID(selectedFileInfo.fileID),
-			fileName(move(selectedFileInfo.fileName)), 
-			filePath(move(selectedFileInfo.filePath)), 
-			isFolder(selectedFileInfo.isFolder), 
-			oldFileSize(selectedFileInfo.oldFileSize),
+			:FileInfo(selectedFileInfo.isFolder,selectedFileInfo.fileName, selectedFileInfo.oldFileSize, selectedFileInfo.WPL_Size),
+			fileID (selectedFileInfo.fileID),
+			filePath(move(selectedFileInfo.filePath)),
 			dataBlockSize(selectedFileInfo.dataBlockSize),
 			dataBlockAmount(selectedFileInfo.dataBlockAmount),
 			dataBlocksymbolFrequency(move(selectedFileInfo.dataBlocksymbolFrequency)),
 			symbolFrequency(move(selectedFileInfo.symbolFrequency)),
-			WPL_Size(selectedFileInfo.WPL_Size),
 			dataBlockWPL_Size(move(selectedFileInfo.dataBlockWPL_Size)),
 			threadLock(move(selectedFileInfo.threadLock)){}
 	//移动赋值运算符
@@ -95,6 +98,23 @@ struct SelectedFileInfo {
 	//禁止拷贝构造和赋值操作
 	SelectedFileInfo(const SelectedFileInfo&) = delete;
 	SelectedFileInfo& operator=(const SelectedFileInfo&) = delete;
-	~SelectedFileInfo() {}
 };
 
+struct InternalFileInfo : public FileInfo {
+	//总文件夹数
+	static size_t folderAmount;
+	//文件夹序号
+	size_t folderID = 0;
+	//在压缩文件内的偏移量
+    size_t fileOffset;
+	InternalFileInfo(){};
+	InternalFileInfo(bool isfolder,const path& name, uintmax_t oldfilesize, const pair<uintmax_t, BYTE>& wpl_size ,size_t offset,size_t folderid = 0,bool isreturnfolder = false):FileInfo(isfolder,name,oldfilesize,wpl_size),fileOffset(offset) {
+		if (isFolder && !isreturnfolder) {//自动分配文件夹序号
+            ++folderAmount;
+			folderID = folderAmount;
+		}
+		else {
+			folderID = folderid;
+		}
+	}
+};

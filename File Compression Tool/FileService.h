@@ -3,7 +3,7 @@
 #include<tchar.h>
 #include <filesystem>
 #include "ZipFileInfo.h"
-#include "SelectedFileInfo.h"
+#include "FileInfo.h"
 
 using namespace std;
 using namespace filesystem;

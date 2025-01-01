@@ -1,4 +1,5 @@
 ﻿#include"ZipFunc.h"
+#include"UnpackFunc.h"
 
 //注册主窗口类
 ATOM MainWnd::RegisterWndClass()
@@ -40,12 +41,44 @@ LRESULT MainWnd::WM_COMMAND_WndProc()
 			switch (LOWORD(wParam_WndProc)) {
 			case buttonOpenID_ToolBar://打开
 			{
-				TestMessageBox();
+				if (UnpackFunc::GetUnpackFunc().OpenZipFile()) {
+					UnpackFunc::GetUnpackFunc().GetFileInfo();
+					//准备刷新列表数据
+					//删除所有行
+					ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)fileListID));
+					//将项插入文件列表
+					LVITEM item;
+					TCHAR tempTCHAR[26];
+					const vector<vector<InternalFileInfo>> & internalFileArr = UnpackFunc::GetUnpackFunc().GetInternalFileInfo();
+					for (size_t i = 0; i < internalFileArr.at(0).size();++i) {
+						item.mask = LVIF_TEXT;
+						item.iItem = i;//项索引
+						item.iSubItem = 0;//子项索引
+						item.pszText = (LPTSTR)internalFileArr.at(0).at(i).fileName.c_str();//名称
+						ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+
+						++item.iSubItem;//子项索引
+						if (internalFileArr.at(0).at(i).isFolder)item.pszText = (LPTSTR)_T("文件夹");//类型
+						else item.pszText = (LPTSTR)_T("文件");
+						ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+
+						++item.iSubItem;//子项索引
+						_stprintf_s(tempTCHAR, _T("%llu"), internalFileArr.at(0).at(i).oldFileSize);
+						item.pszText = tempTCHAR;
+						ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+
+						++item.iSubItem;//子项索引
+						_stprintf_s(tempTCHAR, _T("%llu"), internalFileArr.at(0).at(i).WPL_Size.first);
+						item.pszText = tempTCHAR;
+						ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+					}
+				}
+
 				break;
 			}
 			case buttonPreviewID_ToolBar://预览
 			{
-
+				ClickPreviewButton();
 				break;
 			}
 			case buttonZipID_ToolBar://压缩
@@ -55,7 +88,8 @@ LRESULT MainWnd::WM_COMMAND_WndProc()
 			}
 			case buttonUnpackID_ToolBar://解压
 			{
-
+				if(UnpackFunc::GetUnpackFunc().GetZipFilePath().empty()) MessageBox(hwnd_WndProc, _T("请先打开一个压缩包"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+				else UnpackFunc::GetUnpackFunc().Wnd(true);
 				break;
 			}
 			case buttonSetID_ToolBar://设置
@@ -77,9 +111,18 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 {
 	//获取消息携带的信息
 	LPNMHDR lpnmhdr = (LPNMHDR)lParam_WndProc;
-
-	//由工具栏控件发来的消息
-	if (lpnmhdr->idFrom == toolBarID){
+	//来自文件列表编辑框的消息
+	if (lpnmhdr->idFrom == fileListID) {
+		//判断通知代码
+		switch (lpnmhdr->code) {
+		case NM_DBLCLK: {//双击项
+			NMITEMACTIVATE* nmitem = (NMITEMACTIVATE*)lParam_WndProc;
+			if(nmitem->iItem != -1)ClickPreviewButton();
+			
+		}
+		}
+	}
+	else if (lpnmhdr->idFrom == toolBarID){//由工具栏控件发来的消息
 		//判断通知代码
 		switch (lpnmhdr->code) {
 		case NM_CUSTOMDRAW: //通知控件的父窗口自定义绘图操作
@@ -360,10 +403,10 @@ LRESULT MainWnd::WM_CREATE_WndProc() {
 	//插入列
 	LVCOLUMN column = { 0 };
 	column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM | LVCF_MINWIDTH;
-	column.cx = 0.15 * point.x;
+	column.cx = 0.2 * point.x;
 	column.pszText = (LPTSTR)_T("名称");
 	column.iSubItem = (int)FileListColumnID::columnNameID;
-	column.cxMin = 0.15 * point.x;
+	column.cxMin = 0.2 * point.x;
 	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnNameID, &column);
 
 	column.fmt = LVCFMT_CENTER;
@@ -372,6 +415,20 @@ LRESULT MainWnd::WM_CREATE_WndProc() {
 	column.iSubItem = (int)FileListColumnID::columnTypeID;
 	column.cxMin = 0.15 * point.x;
 	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnTypeID, &column);
+
+	column.fmt = LVCFMT_RIGHT;
+	column.cx = 0.15 * point.x;
+	column.pszText = (LPTSTR)_T("原始大小");
+	column.iSubItem = (int)FileListColumnID::columnOriginalSizeID;
+	column.cxMin = 0.15 * point.x;
+	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnOriginalSizeID, &column);
+
+	column.fmt = LVCFMT_RIGHT;
+	column.cx = 0.15 * point.x;
+	column.pszText = (LPTSTR)_T("压缩后大小");
+	column.iSubItem = (int)FileListColumnID::columnZipSizeID;
+	column.cxMin = 0.15 * point.x;
+	ListView_InsertColumn(fileListViewHwnd, FileListColumnID::columnZipSizeID, &column);
 
 	return 0;
 }
@@ -406,4 +463,46 @@ BOOL MainWnd::EnumChildProc(HWND hwndChild, LPARAM lParam)
 		MoveWindow(hwndChild, 0, point.y, point.x, rc.bottom - rc.top - point.y, TRUE);
 	}
 	return TRUE;
+}
+
+void MainWnd::ClickPreviewButton()
+{
+	//找到具有焦点的项
+	const vector<vector<InternalFileInfo>>& internalFileArr = UnpackFunc::GetUnpackFunc().GetInternalFileInfo();
+	size_t& folderIndex = UnpackFunc::GetUnpackFunc().folderIndex;
+	LONGLONG focusedItem = ListView_GetNextItem(GetDlgItem(hwnd_WndProc, (int)fileListID), -1, LVNI_FOCUSED);
+	if (focusedItem == -1 || !internalFileArr.at(folderIndex).at(focusedItem).isFolder) {
+		MessageBox(hwnd_WndProc, _T("请选择一个要预览的文件夹"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+		return;
+	}
+	folderIndex = internalFileArr.at(folderIndex).at(focusedItem).folderID;
+	//准备刷新列表数据
+	//删除所有行
+	ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)fileListID));
+	//将项插入文件列表
+	LVITEM item;
+	TCHAR tempTCHAR[26];
+	for (size_t i = 0; i < internalFileArr.at(folderIndex).size(); ++i) {
+		item.mask = LVIF_TEXT;
+		item.iItem = i;//项索引
+		item.iSubItem = 0;//子项索引
+		item.pszText = (LPTSTR)internalFileArr.at(folderIndex).at(i).fileName.c_str();//名称
+		ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+		if (internalFileArr.at(folderIndex).at(i).fileName == "..(返回上一级文件夹)")continue;
+
+		++item.iSubItem;//子项索引
+		if (internalFileArr.at(folderIndex).at(i).isFolder)item.pszText = (LPTSTR)_T("文件夹");//类型
+		else item.pszText = (LPTSTR)_T("文件");
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+
+		++item.iSubItem;//子项索引
+		_stprintf_s(tempTCHAR, _T("%llu"), internalFileArr.at(folderIndex).at(i).oldFileSize);
+		item.pszText = tempTCHAR;
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+
+		++item.iSubItem;//子项索引
+		_stprintf_s(tempTCHAR, _T("%llu"), internalFileArr.at(folderIndex).at(i).WPL_Size.first);
+		item.pszText = tempTCHAR;
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)fileListID), &item);
+	}
 }

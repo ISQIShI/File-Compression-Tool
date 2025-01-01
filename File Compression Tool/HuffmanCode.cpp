@@ -105,6 +105,8 @@ void HuffmanCode::EncodeHuffmanTree(vector<pair<BYTE, BYTE>>& codeLength,Huffman
 
 void HuffmanCode::GetWPL(SelectedFileInfo& selectedFile, size_t dataBlockIndex, const vector<pair<BYTE, BYTE>>& codeLength)
 {
+	//空文件直接返回
+	if (selectedFile.oldFileSize == 0)return;
 	size_t temp;
 	BYTE tempBits;
 	for (auto& [symbol,clength]: codeLength) {

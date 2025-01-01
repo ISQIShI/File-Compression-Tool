@@ -13,13 +13,13 @@ void ThreadPool::ThreadLoop(ThreadInfo* threadinfo)
 			if (threadinfo->willTerminate || (!isRunning && taskQueue.empty()))return;
 			//从队列中取出任务
 			threadinfo->taskInfo = taskQueue.front();
+			workThreadAmount.fetch_add(1);
 			taskQueue.pop();
 		}
 		if (!threadinfo->taskInfo) {
 			throw std::runtime_error("任务信息为空");
 			continue;
 		}
-		workThreadAmount.fetch_add(1);
 		//执行任务
 		threadinfo->taskInfo->taskFunc();
 

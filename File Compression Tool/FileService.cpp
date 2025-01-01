@@ -209,14 +209,14 @@ unsigned short FileService::WriteZipFileHeader(ZipFileInfo& zipFile)
 	DWORD written;
 	//标识签名
 	char identification[2] = { 'y','a' };
-	WriteFile(fileHandle, identification, sizeof(identification), &written, nullptr);
+	WriteFile(fileHandle, identification, 2, &written, nullptr);
 	//首部大小
-	unsigned short headerSize = 4 + sizeof(zipFile.codeLength[0]) * zipFile.codeLength.size();
-	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
+	unsigned short headerSize = 4 + 2 * zipFile.codeLength.size();
+	WriteFile(fileHandle, &headerSize, 2, &written, nullptr);
 	//符号-编码长度表
 	for (size_t i = 0; i < zipFile.codeLength.size(); ++i)
 	{
-		WriteFile(fileHandle, &zipFile.codeLength[i], sizeof(zipFile.codeLength[i]), &written, nullptr);
+		WriteFile(fileHandle, &zipFile.codeLength[i], 2, &written, nullptr);
 	}
 	CloseHandle(fileHandle);
 	return headerSize;
@@ -237,14 +237,13 @@ unsigned short FileService::WriteFileHeader(const SelectedFileInfo& sourceFile, 
 	//首部大小
 	unsigned short headerSize = 19 + sourceFile.fileName.wstring().size() * 2;
 	WriteFile(fileHandle, &headerSize, sizeof(headerSize), &written, nullptr);
-	//填充比特数
-	BYTE fileType_bitsCount = sourceFile.WPL_Size.second;
-	WriteFile(fileHandle, &fileType_bitsCount, sizeof(fileType_bitsCount), &written, nullptr);
 	//原始文件大小
 	uintmax_t oldSize = sourceFile.oldFileSize;
 	WriteFile(fileHandle, &oldSize, sizeof(oldSize), &written, nullptr);
-	//数据块大小
+	//压缩后大小
 	WriteFile(fileHandle, &sourceFile.WPL_Size.first, sizeof(sourceFile.WPL_Size.first), &written, nullptr);
+	//填充比特数
+	WriteFile(fileHandle, &sourceFile.WPL_Size.second, sizeof(sourceFile.WPL_Size.second), &written, nullptr);
 	//文件名
 	WriteFile(fileHandle, sourceFile.fileName.c_str(), headerSize - 19, &written, nullptr);
 

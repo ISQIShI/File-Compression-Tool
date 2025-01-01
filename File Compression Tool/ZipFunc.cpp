@@ -3,8 +3,8 @@
 #include "ThreadPool.h"
 #include"ZipFunc.h"
 #include <chrono>
-#include <shobjidl.h> 
-
+#include <ShObjIdl_core.h>
+#include <shtypes.h>
 
 void ZipFunc::StartZip(bool openMultiThread)
 {
@@ -66,7 +66,7 @@ void ZipFunc::StartZip(bool openMultiThread)
 	std::future getNormalSymbolCode = threadPool.SubmitTask(4, false, HuffmanCode::GetNormalSymbolCode ,ref(zipFile->codeLength), ref(zipFile->symbolCode));
 	//7.注册回调函数
 	for (auto& selectedFile : *selectedFileArr) {
-		threadPool.RegisterCallBackFunc(selectedFile.fileID + 100, &ZipFunc::WriteSelectedFileData, this, ref(selectedFile), ref(threadPool));
+		threadPool.RegisterCallBackFunc(selectedFile.fileID + 100,true ,&ZipFunc::WriteSelectedFileData, this, ref(selectedFile), ref(threadPool));
 	}
 	//等待第5、6步任务完成
 	zipFile->newFileSize += zipFileHeaderSize.get();
@@ -75,15 +75,14 @@ void ZipFunc::StartZip(bool openMultiThread)
 	auto middleTime = std::chrono::high_resolution_clock::now();
 	//8.利用 全局的符号-编码长度表 和各数据块的 符号-频率 表,计算各非空文件压缩后各数据块数据大小和填补的比特数
 	for (auto& selectedFile : *selectedFileArr) {
-		if (selectedFile.oldFileSize) {
-			for (size_t i = 0; i < selectedFile.dataBlockAmount; ++i) {
-				threadPool.SubmitTask(selectedFile.fileID + 100, true, HuffmanCode::GetWPL, ref(selectedFile), i, ref(zipFile->codeLength));
-			}
+		for (size_t i = 0; i < selectedFile.dataBlockAmount; ++i) {
+			threadPool.SubmitTask(selectedFile.fileID + 100, true, HuffmanCode::GetWPL, ref(selectedFile), i, ref(zipFile->codeLength));
 		}
+		
 	}
-	int a;//查看等待任务列表
-	while (threadPool.GetTaskAmount() || threadPool.GetWorkThreadAmount()) {
-		this_thread::yield();
+	int temp = SelectedFileInfo::selectedFileAmount + 100 - threadPool.GetThreadTotalAmount();//查看等待任务列表
+	for (size_t i = ((temp > 100) ? temp : 101); i <= SelectedFileInfo::selectedFileAmount + 100; ++i) {
+		threadPool.WaitTask(i);
 	}
 	//等待文件写入完成
 	threadPool.WaitTask(6);
@@ -171,143 +170,16 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 		//根据点击的按钮不同执行不同功能
 		switch (LOWORD(wParam_WndProc)) {
 		//点击选择文件和选择文件夹按钮
-		case (int)ZipFuncWndChildID::buttonSelectFileID:case (int)ZipFuncWndChildID::buttonSelectFolderID:
-		{
-			//初始化资源
-			HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-			IFileOpenDialog* fileOpenDialog = nullptr;
-			//创建对话框实例
-			hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileOpenDialog));
-			if (!SUCCEEDED(hr))break;
-			//配置文件对话框选项
-            DWORD dword;
-            hr = fileOpenDialog ->GetOptions(&dword);
-			if (LOWORD(wParam_WndProc)==(int)ZipFuncWndChildID::buttonSelectFileID)
-			{
-				//设置文件多选
-				hr = fileOpenDialog ->SetOptions(dword | FOS_ALLOWMULTISELECT); 
-				//设置过滤器
-				COMDLG_FILTERSPEC filter[] = { { L"所有文件", L"*.*" }, { L"文本文件", L"*.txt" }};
-				hr = fileOpenDialog->SetFileTypes(ARRAYSIZE(filter), filter);
-			}
-			else{
-				//设置文件夹多选
-				hr = fileOpenDialog ->SetOptions(dword | FOS_PICKFOLDERS | FOS_ALLOWMULTISELECT); 
-			}
-      		//显示对话框
-			hr = fileOpenDialog->Show(hwnd_WndProc);
-            //获取用户选择结果
-            IShellItemArray* selectedIItemArray;
-			hr = fileOpenDialog->GetResults(&selectedIItemArray);
-			if (!SUCCEEDED(hr))break;
-			//获取选择的文件数
-			DWORD fileCount = 0;
-			selectedIItemArray->GetCount(&fileCount);
-			//遍历所有选择的文件
-			for (DWORD x = 0; x < fileCount; ++x) {
-				IShellItem* selectedItem = nullptr;
-				LPWSTR filePath = nullptr;
-				//获取索引为x的文件
-				selectedIItemArray->GetItemAt(x,&selectedItem);
-				//获取文件路径
-				selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-				//当数组中不存在该文件时，插入已选择文件数组
-				if (find_if(selectedFileArr->begin(), selectedFileArr->end(), [&filePath](SelectedFileInfo& temp) -> bool {return temp.filePath.wstring() == wstring(filePath); }) == selectedFileArr->end()){
-					selectedFileArr->emplace_back(path(filePath).filename(), filePath, is_directory(filePath), FileService::GetFileSize(filePath));
-				}
-				//销毁资源
-				selectedItem->Release();
-				CoTaskMemFree(filePath);
-			}
-			//销毁资源
-			selectedIItemArray->Release();
-			fileOpenDialog->Release();
-			CoUninitialize();
-
-			//准备刷新列表数据
-			//删除所有行
-			ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID));
-			//将项插入文件列表
-			LVITEM item;
-			wstring tempWString;
-			TCHAR tempTCHAR[21];
-			for (size_t x = 0; x < selectedFileArr->size();++x) {
-				item.mask = LVIF_TEXT;
-				item.iItem = x;//项索引
-				item.iSubItem = 0;//子项索引
-				tempWString = (*selectedFileArr)[x].fileName.wstring();
-				item.pszText = (LPTSTR)tempWString.c_str();//名称
-				ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
-
-				++item.iSubItem;//子项索引
-				if ((*selectedFileArr)[x].isFolder)item.pszText = (LPTSTR)_T("文件夹");//类型
-				else item.pszText = (LPTSTR)_T("文件");
-				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
-
-				++item.iSubItem;//子项索引
-				uintmax_t size = (*selectedFileArr)[x].oldFileSize;
-				if(size >= (uintmax_t(2048*1024)*1024))_stprintf_s(tempTCHAR, _T("%.2f GB"), double(size)/(1024*1024*1024));
-				else if(size >= 2048*1024)_stprintf_s(tempTCHAR, _T("%.2f MB"), double(size)/(1024*1024));
-				else if(size >= 2048)_stprintf_s(tempTCHAR, _T("%.2f KB"), double(size)/1024);
-				else _stprintf_s(tempTCHAR, _T("%.2f B"), double(size));
-				item.pszText = tempTCHAR;//大小
-				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
-
-				++item.iSubItem;//子项索引
-				tempWString = (*selectedFileArr)[x].filePath.wstring();
-				item.pszText = (LPTSTR)tempWString.c_str();//路径
-				ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
-			}
+		case (int)ZipFuncWndChildID::buttonSelectFileID:case (int)ZipFuncWndChildID::buttonSelectFolderID:{
+			ClickSelectFileButton();
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonDeleteID: {
-			HWND hwnd = GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID);
-			for (size_t x = 0; x < selectedFileArr->size(); ++x) {
-				//点击删除时遍历所有项
-				UINT state = ListView_GetItemState(hwnd, x, LVIS_SELECTED);
-				//如果项被选中则删除
-				if (state & LVIS_SELECTED) {
-					selectedFileArr->erase(selectedFileArr->begin() + x);
-					ListView_DeleteItem(hwnd, x);
-					--x;//修正索引值
-				}
-			}
+			ClickDeleteButton();
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonStartID:{
-			if (selectedFileArr->empty()) {
-				MessageBox(hwnd_WndProc, _T("没有要压缩的文件(文件夹),请先添加文件(文件夹)"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
-				break;
-			}
-			int length = GetWindowTextLength(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID));
-			//审查压缩文件路径是否正确
-			if (!length) {
-				MessageBox(hwnd_WndProc, _T("文件名为空,请检查压缩文件路径"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
-				break;
-			}
-			LPTSTR fileNameStr = new TCHAR[length + 1];
-			GetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileNameStr,length + 1);
-			//解析为绝对路径
-			path fileName = absolute(fileNameStr);
-			//设置编辑框文本
-			SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileName.c_str());
-			if (!exists(fileName.root_path())) {	
-				MessageBox(hwnd_WndProc, _T("文件路径中根目录不存在,请修改压缩文件路径"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
-				break;
-			}
-			if (!exists(fileName.parent_path())||!is_directory(fileName.parent_path())) {
-				if (MessageBox(hwnd_WndProc, (_T("指定的父级文件夹不存在,是否新建文件夹?\n-") + fileName.parent_path().native()).c_str(), _T("鸭一压"), MB_YESNO | MB_TASKMODAL) == IDYES) {
-					create_directories(fileName.parent_path());
-				}
-				else break;
-			}
-			if (MessageBox(hwnd_WndProc, (_T("是否确定将所选文件(文件夹)压缩到当前路径?\n-") + fileName.native()).c_str(),_T("鸭一压") ,MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
-				break;
-			}
-			zipFile->zipFilePath = fileName;
-			//开始压缩
-			StartZip();
-			DestroyWindow(hwnd_WndProc);//销毁窗口并发送WM_DESTROY消息
+			ClickStartButton();
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonCancelID:{
@@ -315,38 +187,7 @@ LRESULT ZipFunc::WM_COMMAND_WndProc()
 			break;
 		}
 		case (int)ZipFuncWndChildID::buttonBrowseID: {
-			//初始化资源
-			HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-			IFileSaveDialog* fileSaveDialog = nullptr;
-			//创建对话框实例
-			hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileSaveDialog));
-			if (!SUCCEEDED(hr))break;
-			//设置默认文件名
-			fileSaveDialog->SetFileName(L"新建压缩包");
-			//设置文件后缀
-			COMDLG_FILTERSPEC rgSpec[] = { { L"压缩包文件 (*.ya)", L"*.ya" }};
-            fileSaveDialog->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
-			fileSaveDialog->SetDefaultExtension(L"ya");
-			//配置文件对话框选项
-			//DWORD dword;
-			//hr = fileSaveDialog->GetOptions(&dword);
-			//hr = fileSaveDialog->SetOptions(dword);
-      		//显示对话框
-			hr = fileSaveDialog->Show(hwnd_WndProc);
-            //获取用户选择结果
-            IShellItem* selectedItem = nullptr;
-			hr = fileSaveDialog->GetResult(&selectedItem);
-			if (!SUCCEEDED(hr))break;
-			LPWSTR filePath = nullptr;
-			//获取文件夹路径
-			selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-			//设置编辑框文本
-			SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), filePath);
-			//销毁资源
-			selectedItem->Release();
-			CoTaskMemFree(filePath);
-			fileSaveDialog->Release();
-			CoUninitialize();
+			ClickBrowseButton();
 			break;
 		}
 		}
@@ -514,6 +355,193 @@ LRESULT ZipFunc::WM_DESTROY_WndProc()
 {
 	PostQuitMessage(0);//发布WM_QUIT消息
 	return 0;
+}
+
+void ZipFunc::ClickSelectFileButton()
+{
+	//初始化资源
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	IFileOpenDialog* fileOpenDialog = nullptr;
+	//创建对话框实例
+	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileOpenDialog));
+	if (!SUCCEEDED(hr))
+	{
+		CoUninitialize();
+		return;
+	}
+	//配置文件对话框选项
+	DWORD dword;
+	hr = fileOpenDialog->GetOptions(&dword);
+	if (LOWORD(wParam_WndProc) == (int)ZipFuncWndChildID::buttonSelectFileID)
+	{
+		//设置文件多选
+		hr = fileOpenDialog->SetOptions(dword | FOS_ALLOWMULTISELECT);
+		//设置过滤器
+		COMDLG_FILTERSPEC filter[] = { { L"所有文件", L"*.*" }, { L"文本文件", L"*.txt" } };
+		hr = fileOpenDialog->SetFileTypes(ARRAYSIZE(filter), filter);
+	}
+	else {
+		//设置文件夹多选
+		hr = fileOpenDialog->SetOptions(dword | FOS_PICKFOLDERS | FOS_ALLOWMULTISELECT);
+	}
+	//显示对话框
+	hr = fileOpenDialog->Show(hwnd_WndProc);
+	//获取用户选择结果
+	IShellItemArray* selectedIItemArray;
+	hr = fileOpenDialog->GetResults(&selectedIItemArray);
+	if (!SUCCEEDED(hr)) {
+		fileOpenDialog->Release();
+		CoUninitialize();
+		return;
+	}
+	//获取选择的文件数
+	DWORD fileCount = 0;
+	selectedIItemArray->GetCount(&fileCount);
+	//遍历所有选择的文件
+	for (DWORD x = 0; x < fileCount; ++x) {
+		IShellItem* selectedItem = nullptr;
+		LPWSTR filePath = nullptr;
+		//获取索引为x的文件
+		selectedIItemArray->GetItemAt(x, &selectedItem);
+		//获取文件路径
+		selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
+		//当数组中不存在该文件时，插入已选择文件数组
+		if (find_if(selectedFileArr->begin(), selectedFileArr->end(), [&filePath](SelectedFileInfo& temp) -> bool {return temp.filePath.wstring() == wstring(filePath); }) == selectedFileArr->end()) {
+			selectedFileArr->emplace_back(path(filePath).filename(), filePath, is_directory(filePath), FileService::GetFileSize(filePath));
+		}
+		//销毁资源
+		selectedItem->Release();
+		CoTaskMemFree(filePath);
+	}
+	//销毁资源
+	selectedIItemArray->Release();
+	fileOpenDialog->Release();
+	CoUninitialize();
+
+	//准备刷新列表数据
+	//删除所有行
+	ListView_DeleteAllItems(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID));
+	//将项插入文件列表
+	LVITEM item;
+	wstring tempWString;
+	TCHAR tempTCHAR[21];
+	for (size_t x = 0; x < selectedFileArr->size(); ++x) {
+		item.mask = LVIF_TEXT;
+		item.iItem = x;//项索引
+		item.iSubItem = 0;//子项索引
+		tempWString = (*selectedFileArr)[x].fileName.wstring();
+		item.pszText = (LPTSTR)tempWString.c_str();//名称
+		ListView_InsertItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
+
+		++item.iSubItem;//子项索引
+		if ((*selectedFileArr)[x].isFolder)item.pszText = (LPTSTR)_T("文件夹");//类型
+		else item.pszText = (LPTSTR)_T("文件");
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
+
+		++item.iSubItem;//子项索引
+		uintmax_t size = (*selectedFileArr)[x].oldFileSize;
+		if (size >= (uintmax_t(2048 * 1024) * 1024))_stprintf_s(tempTCHAR, _T("%.2f GB"), double(size) / (1024 * 1024 * 1024));
+		else if (size >= 2048 * 1024)_stprintf_s(tempTCHAR, _T("%.2f MB"), double(size) / (1024 * 1024));
+		else if (size >= 2048)_stprintf_s(tempTCHAR, _T("%.2f KB"), double(size) / 1024);
+		else _stprintf_s(tempTCHAR, _T("%.2f B"), double(size));
+		item.pszText = tempTCHAR;//大小
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
+
+		++item.iSubItem;//子项索引
+		tempWString = (*selectedFileArr)[x].filePath.wstring();
+		item.pszText = (LPTSTR)tempWString.c_str();//路径
+		ListView_SetItem(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID), &item);
+	}
+}
+
+void ZipFunc::ClickDeleteButton(){
+	HWND hwnd = GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::selectedFileListID);
+	for (size_t x = 0; x < selectedFileArr->size(); ++x) {
+		//点击删除时遍历所有项
+		UINT state = ListView_GetItemState(hwnd, x, LVIS_SELECTED);
+		//如果项被选中则删除
+		if (state & LVIS_SELECTED) {
+			selectedFileArr->erase(selectedFileArr->begin() + x);
+			ListView_DeleteItem(hwnd, x);
+			--x;//修正索引值
+		}
+	}
+}
+
+void ZipFunc::ClickStartButton(){
+	if (selectedFileArr->empty()) {
+		MessageBox(hwnd_WndProc, _T("没有要压缩的文件(文件夹),请先添加文件(文件夹)"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+		return;
+	}
+	int length = GetWindowTextLength(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID));
+	//审查压缩文件路径是否正确
+	if (!length) {
+		MessageBox(hwnd_WndProc, _T("文件名为空,请检查压缩文件路径"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+		return;
+	}
+	LPTSTR fileNameStr = new TCHAR[length + 1];
+	GetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileNameStr, length + 1);
+	//解析为绝对路径
+	path fileName = absolute(fileNameStr);
+	//设置编辑框文本
+	SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), fileName.c_str());
+	if (!exists(fileName.root_path())) {
+		MessageBox(hwnd_WndProc, _T("文件路径中根目录不存在,请修改压缩文件路径"), _T("鸭一压"), MB_OK | MB_TASKMODAL);
+		return;
+	}
+	if (!exists(fileName.parent_path()) || !is_directory(fileName.parent_path())) {
+		if (MessageBox(hwnd_WndProc, (_T("指定的路径的父级文件夹不存在,是否新建文件夹?\n-") + fileName.parent_path().native()).c_str(), _T("鸭一压"), MB_YESNO | MB_TASKMODAL) == IDYES) {
+			create_directories(fileName.parent_path());
+		}
+		else return;
+	}
+	if (MessageBox(hwnd_WndProc, (_T("是否确定将所选文件(文件夹)压缩到当前路径?\n-") + fileName.native()).c_str(), _T("鸭一压"), MB_OKCANCEL | MB_TASKMODAL) != IDOK) {
+		return;
+	}
+	zipFile->zipFilePath = fileName;
+	//开始压缩
+	StartZip();
+	DestroyWindow(hwnd_WndProc);//销毁窗口并发送WM_DESTROY消息
+}
+
+void ZipFunc::ClickBrowseButton(){
+	//初始化资源
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	IFileSaveDialog* fileSaveDialog = nullptr;
+	//创建对话框实例
+	hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fileSaveDialog));
+	if (!SUCCEEDED(hr))
+	{
+		CoUninitialize();
+		return;
+	}
+	//设置默认文件名
+	fileSaveDialog->SetFileName(L"新建压缩包");
+	//设置文件后缀
+	COMDLG_FILTERSPEC rgSpec[] = { { L"压缩包文件 (*.ya)", L"*.ya" } };
+	fileSaveDialog->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+	fileSaveDialog->SetDefaultExtension(L"ya");
+	//显示对话框
+	hr = fileSaveDialog->Show(hwnd_WndProc);
+	//获取用户选择结果
+	IShellItem* selectedItem = nullptr;
+	hr = fileSaveDialog->GetResult(&selectedItem);
+	if (!SUCCEEDED(hr))
+	{
+		fileSaveDialog->Release();
+		CoUninitialize();
+		return;
+	}
+	LPWSTR filePath = nullptr;
+	//获取文件夹路径
+	selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
+	//设置编辑框文本
+	SetWindowText(GetDlgItem(hwnd_WndProc, (int)ZipFuncWndChildID::editFileNameID), filePath);
+	//销毁资源
+	selectedItem->Release();
+	CoTaskMemFree(filePath);
+	fileSaveDialog->Release();
+	CoUninitialize();
 }
 
 

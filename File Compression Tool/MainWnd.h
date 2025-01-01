@@ -20,7 +20,9 @@ enum MainWndChildID :unsigned char {
 
 enum class FileListColumnID :unsigned char {
 	columnNameID,
-	columnTypeID
+	columnTypeID,
+	columnOriginalSizeID,
+    columnZipSizeID,
 };
 
 //主窗口类
@@ -56,6 +58,8 @@ class MainWnd :public MyWnds {
 	LRESULT WM_DESTROY_WndProc() override;
 	//重写的枚举子窗口过程函数
 	BOOL CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam) override;
+
+	void ClickPreviewButton();
 
 public:
 	static MainWnd& GetMainWnd() {

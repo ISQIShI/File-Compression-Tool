@@ -169,7 +169,7 @@ public:
 
 	//查找任务队列中是否存在某个任务
 	bool FindTask(size_t taskID);
-
+	
 	//阻塞调用方线程，直到具有 该任务ID 的任务全部完成，适用于需要等待的同ID的任务很多时
 	void WaitTask(size_t taskID);
 };

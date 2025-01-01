@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include<unordered_map>
-#include "SelectedFileInfo.h"
+#include "FileInfo.h"
 
 class HuffmanNode {
 public:

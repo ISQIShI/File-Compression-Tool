@@ -1,11 +1,8 @@
 ﻿#pragma once
 #include"MainWnd.h"
-#include "SelectedFileInfo.h"
+#include "FileInfo.h"
 #include "ZipFileInfo.h"
-#include<filesystem>
 #include<vector>
-using namespace std;
-using namespace filesystem;
 
 class ThreadPool;
 
@@ -41,7 +38,7 @@ class ZipFunc :public MyWnds{
 	HWND CreateWnd() override;
 
 	LRESULT WM_COMMAND_WndProc() override;
-	LRESULT WM_NOTIFY_WndProc();
+	LRESULT WM_NOTIFY_WndProc() override;
 	LRESULT WM_PAINT_WndProc() override;
 	//创建窗口时顺带执行的操作
 	LRESULT WM_CREATE_WndProc() override;
@@ -50,8 +47,12 @@ class ZipFunc :public MyWnds{
 	//销毁窗口
 	LRESULT WM_DESTROY_WndProc() override;
 	//======================================================================
+	void ClickSelectFileButton();
+	void ClickDeleteButton();
+	void ClickStartButton();
+	void ClickBrowseButton();
 
-	//采用单例设计理念，主窗口类只能实例化一个对象
+	//采用单例设计理念，窗口类只能实例化一个对象
 	ZipFunc() {
 		isModalDialog = MainWnd::GetMainWnd().GetWndHwnd();
 		wndWidth = 1000;
