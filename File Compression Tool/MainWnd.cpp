@@ -285,22 +285,26 @@ LRESULT MainWnd::WM_NOTIFY_WndProc()
 						switch (choice) {
 						case firstPopUpMenuOptionID_ButtonUnpack_ToolBar: {
 							UnpackFunc::GetUnpackFunc().targetPath = UnpackFunc::GetUnpackFunc().GetZipFilePath();
-
+							UnpackFunc::GetUnpackFunc().openIntelligentUnpack = false;
+							UnpackFunc::GetUnpackFunc().StartUnpack();
 							break;
 						}
 						case secondPopUpMenuOptionID_ButtonUnpack_ToolBar: {
 							UnpackFunc::GetUnpackFunc().targetPath = UnpackFunc::GetUnpackFunc().GetZipFilePath();
-
+							UnpackFunc::GetUnpackFunc().openIntelligentUnpack = true;
+							UnpackFunc::GetUnpackFunc().StartUnpack();
 							break;
 						}
 						case thirdPopUpMenuOptionID_ButtonUnpack_ToolBar: {
 							UnpackFunc::GetUnpackFunc().targetPath.assign("C:\\Users\\30828\\Desktop");
-
+							UnpackFunc::GetUnpackFunc().openIntelligentUnpack = false;
+							UnpackFunc::GetUnpackFunc().StartUnpack();
 							break;
 						}
 						case fourthPopUpMenuOptionID_ButtonUnpack_ToolBar: {
 							UnpackFunc::GetUnpackFunc().targetPath.assign("C:\\Users\\30828\\Desktop");
-
+							UnpackFunc::GetUnpackFunc().openIntelligentUnpack = true;
+							UnpackFunc::GetUnpackFunc().StartUnpack();
 							break;
 						}
 						}

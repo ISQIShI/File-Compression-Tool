@@ -1,9 +1,157 @@
-#include "UnpackFunc.h"
-#include <ShObjIdl_core.h>
+#include"UnpackFunc.h"
+#include<ShObjIdl_core.h>
+#include"ThreadPool.h"
+#include "FileService.h"
+#include "HuffmanCode.h"
 
 void UnpackFunc::StartUnpack()
 {
+	//初始化线程池
+	size_t maxThreadAmount = 20;//临时占位 之后更改为用户设定的最大线程数
+	size_t availableThreadAmount = thread::hardware_concurrency();
+	ThreadPool threadPool(availableThreadAmount < maxThreadAmount ? availableThreadAmount : maxThreadAmount);
+	//开始解压进行计时
+	auto startTime = std::chrono::high_resolution_clock::now();
+	//获取范式符号-编码表
+	HuffmanCode::GetNormalSymbolCode(zipFile->codeLength, zipFile->symbolCode);
+	if (!zipFile->symbolCode.empty()) {
+		BYTE tempCodeLength = 0;
+		//获取 编码长度-编码-符号 表
+		for (auto& codeLength : zipFile->codeLength) {
+			if (codeLength.second != tempCodeLength) {
+				codeSymbol->emplace_back().first = codeLength.second;
+				tempCodeLength = codeLength.second;
+			}
+			codeSymbol->back().second.emplace(zipFile->symbolCode.at(codeLength.first), codeLength.first);
+		}
+	}
+	//中间计时1
+	auto middleTime = std::chrono::high_resolution_clock::now();
+	//智能解压相关处理
+	if (openIntelligentUnpack) {
+		targetPath /= zipFile->zipFilePath.stem();
+		while (exists(targetPath))targetPath += "-解压文件";
+		create_directories(targetPath);
+	}
+	//解压所有文件
+	if (willUnpackAllFiles) {
+		for (auto& internalFile : internalFileArr->at(0)) {
+			UnpackObject(internalFile,threadPool);
+		}
+	}
+	else {//解压选中的文件
+		size_t x = 0;
+		if (folderIndex) ++x;
+		UINT state;
+		while (x < internalFileArr->at(folderIndex).size()) {
+			//遍历所有当前深度文件夹的项
+			state = ListView_GetItemState(GetDlgItem(MainWnd::GetMainWnd().GetWndHwnd(),fileListID), x, LVIS_SELECTED);
+			//如果项被选中则解压该项
+			if (state & LVIS_SELECTED) UnpackObject(internalFileArr->at(folderIndex).at(x),threadPool);
+			++x;
+		}
+	}
+	//等待解压完成
+	threadPool.WaitTask(1);
 
+	//完成解压结束计时
+	auto endTime = std::chrono::high_resolution_clock::now();
+	auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(middleTime - startTime);
+	auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(endTime - middleTime);
+	TCHAR tempTCHAR[50];
+	_stprintf_s(tempTCHAR, _T("压缩时间：\n准备工作 %f 秒\n解压文件 %f 秒"), duration1.count() / 1000000.0, duration2.count() / 1000000.0);
+	TestMessageBox(hwnd_WndProc, tempTCHAR, _T("解压完成"));
+}
+
+void UnpackFunc::UnpackObject(const InternalFileInfo & internalFile,ThreadPool & threadPool)
+{
+	//文件夹
+	if (internalFile.isFolder) {
+		//若路径不存在则创建
+        if (!exists(targetPath/internalFile.filePath)) {
+            create_directories(targetPath/internalFile.filePath);
+		}
+		//遍历并解压该文件夹内所有项
+		for (size_t i = 1; i < internalFileArr->at(internalFile.folderID).size(); ++i) {
+			UnpackObject(internalFileArr->at(internalFile.folderID).at(i),threadPool);
+		}
+	}
+	else {//文件
+		threadPool.SubmitTask(1, true, &UnpackFunc::UnpackFile, this, internalFile);
+	}
+}
+
+void UnpackFunc::UnpackFile(const InternalFileInfo& internalFile)
+{
+	//创建要解压的文件
+	if (exists(targetPath / internalFile.filePath)) {
+		ErrorMessageBox(hwnd_WndProc, ((targetPath / internalFile.filePath).wstring() + L" 已存在\n请移动该文件或修改解压路径").c_str(), false);
+	}
+	FileService::ExtendFile(targetPath / internalFile.filePath, internalFile.oldFileSize, true);
+	if (internalFile.oldFileSize == 0)return;//空文件返回
+	//映射压缩文件中对应的区域
+	MapFileInfo* mapZipFileInfo = new MapFileInfo((LPTSTR)zipFile->zipFilePath.c_str(), internalFile.fileOffset, internalFile.WPL_Size.first);
+	//进行文件映射
+	FileService::MapFile(*mapZipFileInfo, true);
+	//获取文件映射指针
+	BYTE* zipFilePointer = (BYTE*)mapZipFileInfo->mapViewPointer;
+	//映射将要解压的目的文件
+	path tempPath = targetPath / internalFile.filePath;
+	MapFileInfo* mapTargetFileInfo = new MapFileInfo((LPTSTR)tempPath.c_str(), 0, 0);
+	//进行文件映射
+	FileService::MapFile(*mapTargetFileInfo);
+	//获取文件映射指针
+	BYTE* targetFilePointer = (BYTE*)mapTargetFileInfo->mapViewPointer;
+	//每次读取的最小比特位数
+	BYTE tempIndex = 0;
+	bitset<256> buffer = 0;
+	bitset<8> tempbuffer;
+	BYTE bitCount = 0;
+	for (size_t reader = 0; reader < mapZipFileInfo->fileMapSize - 1; ++reader, ++zipFilePointer) {
+		tempbuffer = *zipFilePointer;
+		//将新读取的数据添加到buffer中
+		for (BYTE i = 0; i < 8; ++i) {
+			buffer <<= 1;
+			buffer[0] = tempbuffer[7 - i];
+			++bitCount;
+			if (bitCount == codeSymbol->at(tempIndex).first ) {
+				if(codeSymbol->at(tempIndex).second.find(buffer)!= codeSymbol->at(tempIndex).second.end() )
+				{
+					*targetFilePointer = codeSymbol->at(tempIndex).second.at(buffer);
+					++targetFilePointer;
+					bitCount = 0;
+					buffer.reset();
+					tempIndex = 0;
+				}
+				else {
+					++tempIndex;
+				}
+			}
+		}
+	}
+	tempbuffer = *zipFilePointer;
+	//将新读取的数据添加到buffer中
+	for (BYTE i = 0; i < 8 - internalFile.WPL_Size.second; ++i) {
+		buffer <<= 1;
+		buffer[0] = tempbuffer[7 - i];
+		++bitCount;
+		if (bitCount == codeSymbol->at(tempIndex).first) {
+			if (codeSymbol->at(tempIndex).second.find(buffer) != codeSymbol->at(tempIndex).second.end())
+			{
+				*targetFilePointer = codeSymbol->at(tempIndex).second.at(buffer);
+				++targetFilePointer;
+				bitCount = 0;
+				buffer.reset();
+				tempIndex = 0;
+			}
+			else {
+				++tempIndex;
+			}
+		}
+	}
+
+	delete mapZipFileInfo;
+	delete mapTargetFileInfo;
 }
 
 ATOM UnpackFunc::RegisterWndClass()
@@ -41,12 +189,19 @@ LRESULT UnpackFunc::WM_COMMAND_WndProc()
 	if (HIWORD(wParam_WndProc) == BN_CLICKED) {
 		//根据点击的按钮不同执行不同功能
 		switch (LOWORD(wParam_WndProc)) {
-		case (int)UnpackFuncWndChildID::radioButtonAllFilesID: {
+		case (int)UnpackFuncWndChildID::radioButtonAllFilesID: {//点击 全部文件 单选框
 			willUnpackAllFiles = true;
 			break;
 		}
-		case (int)UnpackFuncWndChildID::radioButtonSelectedFilesID: {
+		case (int)UnpackFuncWndChildID::radioButtonSelectedFilesID: {//点击 部分文件 单选框
 			willUnpackAllFiles = false;
+			break;
+		}
+		case (int)UnpackFuncWndChildID::checkBoxIntelligentUnpackID: {//点击 智能解压 复选框
+			// 获取复选框的状态
+			LRESULT state = SendMessage(GetDlgItem(hwnd_WndProc, (int)UnpackFuncWndChildID::checkBoxIntelligentUnpackID), BM_GETCHECK, 0, 0);
+			if (state == BST_CHECKED)openIntelligentUnpack = true;
+			else openIntelligentUnpack = false;
 			break;
 		}
 		case (int)UnpackFuncWndChildID::buttonBrowseID: {
@@ -69,7 +224,6 @@ LRESULT UnpackFunc::WM_COMMAND_WndProc()
 	}
 	return 0;
 }
-
 
 LRESULT UnpackFunc::WM_PAINT_WndProc()
 {
@@ -131,6 +285,14 @@ LRESULT UnpackFunc::WM_CREATE_WndProc()
 	);
 	SendMessage(GetDlgItem(hwnd_WndProc, (int)UnpackFuncWndChildID::radioButtonSelectedFilesID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	if(!ListView_GetSelectedCount(GetDlgItem(MainWnd::GetMainWnd().GetWndHwnd(),fileListID)))EnableWindow(GetDlgItem(hwnd_WndProc, (int)UnpackFuncWndChildID::radioButtonSelectedFilesID), FALSE);
+	//创建复选按钮
+	CreateWindowEx(
+		0, WC_BUTTON, _T("智能解压"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+		20, 115, 110, 40,
+		hwnd_WndProc, HMENU(UnpackFuncWndChildID::checkBoxIntelligentUnpackID), hInstance, this
+	);
+	SendMessage(GetDlgItem(hwnd_WndProc, (int)UnpackFuncWndChildID::checkBoxIntelligentUnpackID), BM_SETCHECK, BST_CHECKED, 0);
+	SendMessage(GetDlgItem(hwnd_WndProc, (int)UnpackFuncWndChildID::checkBoxIntelligentUnpackID), WM_SETFONT, (WPARAM)lTSObject[0], TRUE);
 	//创建编辑框
 	CreateWindowEx(
 		WS_EX_CLIENTEDGE, WC_EDIT, zipFile->zipFilePath.parent_path().c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | WS_TABSTOP,
@@ -248,14 +410,14 @@ bool UnpackFunc::OpenZipFile(){
 	}
 	//获取文件路径
 	selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-	if (zipFile->zipFilePath == filePath)
+	/*if (zipFile->zipFilePath == filePath)
 	{
 		selectedItem->Release();
 		CoTaskMemFree(filePath);
 		fileOpenDialog->Release();
 		CoUninitialize();
 		return false;
-	}
+	}*/
 	//初始化文件列表数组
 	if (internalFileArr) {
 		delete internalFileArr;
@@ -263,9 +425,14 @@ bool UnpackFunc::OpenZipFile(){
 		internalFileArr->resize(1);
 		InternalFileInfo::folderAmount = 0;
 	}
+	//初始化编码符号表
+	if (codeSymbol && !codeSymbol->empty()) {
+		codeSymbol->clear();
+	}
 	//初始化文件夹深度
 	folderIndex = 0;
 	willUnpackAllFiles = true;
+	openIntelligentUnpack = true;
 	targetPath.clear();
 	//初始化压缩文件信息
 	if (zipFile) {
@@ -327,6 +494,7 @@ void UnpackFunc::GetFileInfo()
 		LPWSTR tempWCHAR = new WCHAR[fileheaderSize - 18]{};
 		ReadFile(fileHandle, tempWCHAR, fileheaderSize - 19, &readbyte, nullptr);
 		internalFile.fileName = tempWCHAR;
+		internalFile.filePath = *internalFile.fileName.begin();
 		internalFile.isFolder = false;
 		zipFile->newFileSize += fileheaderSize;
 		internalFile.fileOffset = zipFile->newFileSize;
@@ -346,7 +514,7 @@ void UnpackFunc::GetFileInfo()
 		if (internalFileArr->at(i).size() > 1) {
 			beginIt = internalFileArr->at(i).begin();
 			if (i)++beginIt;
-			sort(beginIt, internalFileArr->at(i).end(), [](const InternalFileInfo& a, const InternalFileInfo& b) {return a.isFolder >= b.isFolder; });
+			sort(beginIt, internalFileArr->at(i).end(), [](const InternalFileInfo& a, const InternalFileInfo& b) {return a.isFolder > b.isFolder; });
 		}
 	}
 	CloseHandle(fileHandle);
@@ -360,9 +528,9 @@ void UnpackFunc::StoreFileInfo(InternalFileInfo& internalFile, size_t folderID)
 		auto it = find_if(internalFileArr->at(folderID).begin(), internalFileArr->at(folderID).end(),
 			[&internalFile](const InternalFileInfo& info){return info.fileName == *internalFile.fileName.begin(); });
 		if (it == internalFileArr->at(folderID).end()) {//若不存在则插入
-			InternalFileInfo& temp = internalFileArr->at(folderID).emplace_back(true, *internalFile.fileName.begin(),internalFile.oldFileSize,internalFile.WPL_Size,0 );
+			InternalFileInfo& temp = internalFileArr->at(folderID).emplace_back(true, *internalFile.fileName.begin(), internalFile.filePath,internalFile.oldFileSize,internalFile.WPL_Size,0 );
 			internalFileArr->emplace_back();//创建新的一维容器
-			internalFileArr->at(temp.folderID).emplace_back(true, _T("..(返回上一级文件夹)"), 0, pair<uintmax_t, BYTE>(0, 0), 0,folderID,true);
+			internalFileArr->at(temp.folderID).emplace_back(true, _T("..(返回上一级文件夹)"), _T(""), 0, pair<uintmax_t, BYTE>(0, 0), 0, folderID, true);
 			folderID = temp.folderID;
 		}
 		else {//若存在则增加信息计数
@@ -371,10 +539,11 @@ void UnpackFunc::StoreFileInfo(InternalFileInfo& internalFile, size_t folderID)
 			 folderID = it->folderID;
 		}
 		internalFile.fileName = relative(internalFile.fileName, *internalFile.fileName.begin());
+		internalFile.filePath /= *internalFile.fileName.begin();
 		StoreFileInfo(internalFile, folderID);
 	}
 	else {//准备存入文件
-		internalFileArr->at(folderID).emplace_back(false, internalFile.fileName, internalFile.oldFileSize, internalFile.WPL_Size, internalFile.fileOffset, folderID);
+		internalFileArr->at(folderID).emplace_back(false, internalFile.fileName, internalFile.filePath,internalFile.oldFileSize, internalFile.WPL_Size, internalFile.fileOffset, folderID);
 	}
 }
 

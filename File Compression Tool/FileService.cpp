@@ -76,17 +76,23 @@ void FileService::MapFile(MapFileInfo& mapFileInfo,bool readOnly)
         CloseHandle(mapFileInfo.fileHandle);
 		ErrorMessageBox(NULL, _T("无法映射文件视图"));
 	}
+
+	//修正文件指针
+	BYTE* tempPointer = (BYTE *) mapFileInfo.mapViewPointer;
+	tempPointer += mapFileInfo.offsetCorrection;
+	mapFileInfo.mapViewPointer = tempPointer;
+
 	if (mapFileInfo.fileMapSize == 0) {
 		mapFileInfo.fileMapSize = file_size(mapFileInfo.fileName) - mapFileInfo.fileOffset;
 	}
 }
 
-void FileService::ExtendFile(const path& extendFile,size_t extendSize)
+void FileService::ExtendFile(const path& extendFile,size_t extendSize, bool needCreatFile)
 {
-	if (!exists(extendFile))ErrorMessageBox(NULL, _T("文件不存在,无法扩展文件"));
-	if (extendSize > file_size(extendFile)) {
+	if (!needCreatFile && !exists(extendFile))ErrorMessageBox(NULL, _T("文件不存在,无法扩展文件"));
+	if (needCreatFile || extendSize > file_size(extendFile)) {
 		//打开文件以获取句柄
-		HANDLE fileHandle = CreateFile(extendFile.c_str(), GENERIC_READ |GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE , nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		HANDLE fileHandle = CreateFile(extendFile.c_str(), GENERIC_READ |GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE , nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (fileHandle == INVALID_HANDLE_VALUE) {
 			ErrorMessageBox(NULL, _T("无法打开文件"));
 		}
@@ -133,9 +139,7 @@ void FileService::ZipFile(const SelectedFileInfo& sourceFile,ZipFileInfo& target
 
 	BYTE buffer = 0;
 	BYTE bitCount = 0;
-	//修正文件指针
-	sourceFilePointer += mapSourceFileInfo->offsetCorrection;
-	targetFilePointer += mapTargetFileInfo->offsetCorrection;
+	
 	size_t writer = 0;
 	size_t readerLimit = mapSourceFileInfo->fileMapSize;
 	if (sourceFileMapSize) readerLimit -= 7;

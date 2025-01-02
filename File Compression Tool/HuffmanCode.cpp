@@ -9,8 +9,7 @@ void HuffmanCode::GetSymbolFrequency(SelectedFileInfo& selectedFile, size_t data
 	FileService::MapFile(*mapFileInfo,true);
 	//获取文件指针
 	BYTE* filePointer = (BYTE*)mapFileInfo->mapViewPointer;
-	//修正文件指针
-	filePointer += mapFileInfo->offsetCorrection;
+	
 	//文件指针逐字节遍历整个映射的区域
 	for (size_t x = 0; x < mapFileInfo->fileMapSize; ++x,++filePointer) {
 		//符号对应的频率增加
@@ -149,15 +148,6 @@ void HuffmanCode::MergeWPL_Size(pair<uintmax_t, BYTE>& targetWPL_Size, const pai
 void HuffmanCode::GetNormalSymbolCode(vector<pair<BYTE, BYTE>>& codeLength, unordered_map<BYTE, string>& symbolCode)
 {
 	if (codeLength.empty())return;
-	//处理只有一个符号时，编码长度为0的情况
-	if (codeLength.size() == 1 && codeLength[0].second == 0) { codeLength[0].second = 1; }
-	else {
-		//先对符号-编码长度表进行排序
-		sort(codeLength.begin(), codeLength.end(), [](const pair<BYTE, BYTE>& x, const pair<BYTE, BYTE>& y) {
-			//编码长度越小越靠前，编码长度相同时，符号值越小越靠前
-			return (x.second < y.second) || ((x.second == y.second) && (x.first < y.first));
-			});
-	}
 	//上一个进行编码的符号的编码长度
 	BYTE lastLength = codeLength[0].second;
 	//上一个符号的编码

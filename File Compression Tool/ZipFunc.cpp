@@ -58,6 +58,15 @@ void ZipFunc::StartZip()
 	HuffmanNode* rootNode = HuffmanCode::BuildHuffmanTree(*SelectedFileInfo::globalSymbolFrequency);
 	//4.递归遍历哈夫曼树,获取 全局符号-编码长度表
 	HuffmanCode::EncodeHuffmanTree(zipFile->codeLength, rootNode);
+	//处理只有一个符号时，编码长度为0的情况
+	if (zipFile->codeLength.size() == 1 && zipFile->codeLength[0].second == 0) { zipFile->codeLength[0].second = 1; }
+	else {
+		//先对符号-编码长度表进行排序
+		sort(zipFile->codeLength.begin(), zipFile->codeLength.end(), [](const pair<BYTE, BYTE>& x, const pair<BYTE, BYTE>& y) {
+			//编码长度越小越靠前，编码长度相同时，符号值越小越靠前
+			return (x.second < y.second) || ((x.second == y.second) && (x.first < y.first));
+			});
+	}
 	//后台递归销毁哈夫曼树
 	threadPool.SubmitTask(2,false ,HuffmanCode::DestroyHuffmanTree, rootNode);
 	//5.写入压缩包首部
